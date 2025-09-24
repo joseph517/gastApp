@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/colors';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Screens
 import DashboardScreen from '../screens/DashboardScreen';
@@ -39,44 +39,47 @@ const SettingsStack = () => (
   </Stack.Navigator>
 );
 
-const TabNavigator = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      tabBarIcon: ({ focused, color, size }) => {
-        let iconName: keyof typeof Ionicons.glyphMap = 'home';
+const TabNavigator = () => {
+  const { colors } = useTheme();
 
-        switch (route.name) {
-          case 'DashboardTab':
-            iconName = focused ? 'home' : 'home-outline';
-            break;
-          case 'AddExpenseTab':
-            iconName = focused ? 'add-circle' : 'add-circle-outline';
-            break;
-          case 'StatisticsTab':
-            iconName = focused ? 'stats-chart' : 'stats-chart-outline';
-            break;
-          case 'SettingsTab':
-            iconName = focused ? 'settings' : 'settings-outline';
-            break;
-        }
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: keyof typeof Ionicons.glyphMap = 'home';
 
-        return <Ionicons name={iconName} size={size} color={color} />;
-      },
-      tabBarActiveTintColor: COLORS.primary,
-      tabBarInactiveTintColor: COLORS.gray400,
-      tabBarStyle: {
-        backgroundColor: COLORS.background,
-        borderTopColor: COLORS.gray200,
-        borderTopWidth: 1,
-        paddingBottom: 5,
-        paddingTop: 5,
-        height: 60,
-      },
-      headerShown: false,
-    })}
-  >
-    <Tab.Screen
-      name="DashboardTab"
+          switch (route.name) {
+            case 'DashboardTab':
+              iconName = focused ? 'home' : 'home-outline';
+              break;
+            case 'AddExpenseTab':
+              iconName = focused ? 'add-circle' : 'add-circle-outline';
+              break;
+            case 'StatisticsTab':
+              iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+              break;
+            case 'SettingsTab':
+              iconName = focused ? 'settings' : 'settings-outline';
+              break;
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.gray400,
+        tabBarStyle: {
+          backgroundColor: colors.background,
+          borderTopColor: colors.border,
+          borderTopWidth: 1,
+          paddingBottom: 5,
+          paddingTop: 5,
+          height: 60,
+        },
+        headerShown: false,
+      })}
+    >
+      <Tab.Screen
+        name="DashboardTab"
       component={DashboardStack}
       options={{
         tabBarLabel: 'Inicio',
@@ -104,11 +107,26 @@ const TabNavigator = () => (
       }}
     />
   </Tab.Navigator>
-);
+  );
+};
 
 const AppNavigator = () => {
+  const { colors, isDark } = useTheme();
+
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      theme={{
+        dark: isDark,
+        colors: {
+          primary: colors.primary,
+          background: colors.background,
+          card: colors.surface,
+          text: colors.textPrimary,
+          border: colors.border,
+          notification: colors.accent,
+        },
+      }}
+    >
       <TabNavigator />
     </NavigationContainer>
   );
