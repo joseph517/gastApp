@@ -31,6 +31,7 @@ interface ExpenseStore {
   
   // Utilidades
   clearError: () => void;
+  clearAllData: () => Promise<void>;
   setLoading: (loading: boolean) => void;
 }
 
@@ -306,6 +307,27 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
 
   // Utilidades
   clearError: () => set({ error: null }),
+
+  clearAllData: async () => {
+    try {
+      set({ loading: true, error: null });
+      await databaseService.clearAllData();
+
+      // Limpiar el estado del store
+      set({
+        expenses: [],
+        categories: [],
+        loading: false,
+        error: null,
+      });
+    } catch (error) {
+      console.error('Error clearing all data:', error);
+      set({
+        error: error instanceof Error ? error.message : 'Error al eliminar los datos',
+        loading: false,
+      });
+    }
+  },
   
   setLoading: (loading) => set({ loading }),
 }));

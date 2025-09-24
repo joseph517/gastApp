@@ -18,6 +18,7 @@ import {
   SHADOWS,
 } from "../constants/colors";
 import { databaseService } from "../database/database";
+import { useExpenseStore } from "../store/expenseStore";
 import { UserPreferences } from "../types";
 
 interface SettingItem {
@@ -34,6 +35,7 @@ interface SettingItem {
 
 const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors, isDark, toggleTheme } = useTheme();
+  const { clearAllData } = useExpenseStore();
   const [preferences, setPreferences] = useState<UserPreferences>({
     currency: "COP",
     dateFormat: "DD/MM/YYYY",
@@ -104,18 +106,27 @@ const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const handleDeleteAllData = () => {
     Alert.alert(
       "Eliminar todos los datos",
-      "¿Estás seguro? Esta acción no se puede deshacer.",
+      "¿Estás seguro? Esta acción eliminará todos los gastos y datos de la aplicación. Esta acción no se puede deshacer.",
       [
         { text: "Cancelar", style: "cancel" },
         {
           text: "Eliminar",
           style: "destructive",
-          onPress: () => {
-            // Implementar eliminación de datos
-            Alert.alert(
-              "Información",
-              "Esta función estará disponible próximamente"
-            );
+          onPress: async () => {
+            try {
+              await clearAllData();
+              Alert.alert(
+                "Datos eliminados",
+                "Todos los datos han sido eliminados exitosamente",
+                [{ text: "OK" }]
+              );
+            } catch (error) {
+              console.error('Error deleting all data:', error);
+              Alert.alert(
+                "Error",
+                "Hubo un error al eliminar los datos. Inténtalo de nuevo."
+              );
+            }
           },
         },
       ]
