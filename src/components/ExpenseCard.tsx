@@ -1,8 +1,8 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../contexts/ThemeContext";
 import {
-  COLORS,
   SHADOWS,
   SPACING,
   BORDER_RADIUS,
@@ -21,6 +21,7 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({
   onPress,
   onDelete,
 }) => {
+  const { colors } = useTheme();
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("es-CL", {
       style: "currency",
@@ -36,6 +37,8 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({
       year: "numeric",
     });
   };
+
+  const styles = createStyles(colors);
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
@@ -59,7 +62,7 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({
             onPress={onDelete}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="trash-outline" size={16} color={COLORS.error} />
+            <Ionicons name="trash-outline" size={16} color={colors.error} />
           </TouchableOpacity>
         )}
       </View>
@@ -67,9 +70,9 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   card: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.cardBackground,
     marginHorizontal: SPACING.md,
     marginVertical: SPACING.xs,
     padding: SPACING.md,
@@ -88,7 +91,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: BORDER_RADIUS.full,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
     marginRight: SPACING.sm,
@@ -96,7 +99,7 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: FONT_SIZES.xs,
     fontWeight: "600",
-    color: COLORS.primary,
+    color: colors.primary,
   },
   expenseInfo: {
     flex: 1,
@@ -104,12 +107,12 @@ const styles = StyleSheet.create({
   description: {
     fontSize: FONT_SIZES.md,
     fontWeight: "600",
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     marginBottom: 2,
   },
   date: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   rightSection: {
     alignItems: "flex-end",
@@ -118,7 +121,7 @@ const styles = StyleSheet.create({
   amount: {
     fontSize: FONT_SIZES.lg,
     fontWeight: "700",
-    color: COLORS.error,
+    color: colors.error,
     marginBottom: 4,
   },
   deleteButton: {

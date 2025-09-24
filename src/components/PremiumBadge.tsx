@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES } from '../constants/colors';
+import { useTheme } from '../contexts/ThemeContext';
+import { SPACING, BORDER_RADIUS, FONT_SIZES } from '../constants/colors';
 
 interface PremiumBadgeProps {
   title: string;
@@ -10,12 +11,14 @@ interface PremiumBadgeProps {
   disabled?: boolean;
 }
 
-const PremiumBadge: React.FC<PremiumBadgeProps> = ({ 
-  title, 
-  description, 
-  onPress, 
-  disabled = true 
+const PremiumBadge: React.FC<PremiumBadgeProps> = ({
+  title,
+  description,
+  onPress,
+  disabled = true
 }) => {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   return (
     <TouchableOpacity 
       style={[styles.container, disabled && styles.disabled]} 
@@ -34,7 +37,7 @@ const PremiumBadge: React.FC<PremiumBadgeProps> = ({
           <Ionicons 
             name="lock-closed" 
             size={20} 
-            color={disabled ? COLORS.gray400 : COLORS.accent} 
+            color={disabled ? colors.gray400 : colors.accent} 
           />
         </View>
       </View>
@@ -47,20 +50,20 @@ const PremiumBadge: React.FC<PremiumBadgeProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.cardBackground,
     marginHorizontal: SPACING.md,
     marginVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
-    borderColor: COLORS.accent + '40',
+    borderColor: colors.accent + '40',
     position: 'relative',
     overflow: 'hidden',
   },
   disabled: {
     opacity: 0.7,
-    borderColor: COLORS.gray200,
+    borderColor: colors.gray200,
   },
   content: {
     flexDirection: 'row',
@@ -71,7 +74,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: BORDER_RADIUS.full,
-    backgroundColor: COLORS.accent + '20',
+    backgroundColor: colors.accent + '20',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: SPACING.sm,
@@ -85,12 +88,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZES.md,
     fontWeight: '600',
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     marginBottom: 2,
   },
   description: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   lockContainer: {
     padding: SPACING.xs,
@@ -99,14 +102,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: BORDER_RADIUS.sm,
   },
   comingSoonText: {
     fontSize: FONT_SIZES.xs,
-    color: COLORS.background,
+    color: colors.background,
     fontWeight: '600',
   },
 });

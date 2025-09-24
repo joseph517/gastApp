@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, Dimensions } from "react-native";
+import { useTheme } from "../contexts/ThemeContext";
 import {
-  COLORS,
   SPACING,
   FONT_SIZES,
   BORDER_RADIUS,
@@ -16,6 +16,9 @@ const { width } = Dimensions.get("window");
 const chartSize = width * 0.5;
 
 const PieChart: React.FC<PieChartProps> = ({ data }) => {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   if (data.length === 0) {
     return (
       <View style={styles.emptyContainer}>
@@ -63,7 +66,7 @@ const PieChart: React.FC<PieChartProps> = ({ data }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     alignItems: "center",
     paddingVertical: SPACING.lg,
@@ -75,7 +78,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   chartContainer: {
     position: "relative",
@@ -85,7 +88,7 @@ const styles = StyleSheet.create({
     height: chartSize,
     width: chartSize,
     borderRadius: chartSize / 2,
-    backgroundColor: COLORS.primary + "20",
+    backgroundColor: colors.primary + "20",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
@@ -104,13 +107,13 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   totalAmount: {
     fontSize: FONT_SIZES.lg,
     fontWeight: "700",
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     textAlign: "center",
   },
   legend: {
@@ -132,19 +135,19 @@ const styles = StyleSheet.create({
   legendText: {
     flex: 1,
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     marginRight: SPACING.sm,
   },
   legendPercentage: {
     fontSize: FONT_SIZES.sm,
     fontWeight: "600",
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     minWidth: 40,
     textAlign: "right",
   },
   moreItems: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: "center",
     marginTop: SPACING.xs,
     fontStyle: "italic",

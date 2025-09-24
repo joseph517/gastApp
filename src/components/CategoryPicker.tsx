@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES } from '../constants/colors';
+import { useTheme } from '../contexts/ThemeContext';
+import { SPACING, BORDER_RADIUS, FONT_SIZES } from '../constants/colors';
 import { Category } from '../types';
 
 interface CategoryPickerProps {
@@ -14,6 +15,8 @@ const CategoryPicker: React.FC<CategoryPickerProps> = ({
   selectedCategory,
   onSelectCategory,
 }) => {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Categoría</Text>
@@ -61,14 +64,14 @@ const CategoryPicker: React.FC<CategoryPickerProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     marginVertical: SPACING.md,
   },
   title: {
     fontSize: FONT_SIZES.lg,
     fontWeight: '600',
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     marginBottom: SPACING.sm,
     marginHorizontal: SPACING.md,
   },
@@ -89,7 +92,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   selectedCategory: {
-    borderColor: COLORS.primary,
+    borderColor: colors.primary,
   },
   iconContainer: {
     width: 36,
@@ -104,19 +107,19 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     fontWeight: '500',
   },
   selectedCategoryName: {
-    color: COLORS.primary,
+    color: colors.primary,
     fontWeight: '600',
   },
   premiumBadge: {
     position: 'absolute',
     top: -2,
     right: -2,
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     borderRadius: BORDER_RADIUS.full,
     width: 20,
     height: 20,
