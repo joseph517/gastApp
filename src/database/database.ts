@@ -304,6 +304,21 @@ class DatabaseService {
     }, 'getAllSettings');
   }
 
+  async clearAllData(): Promise<void> {
+    return this.executeWithConnection(async (db) => {
+      // Eliminar todos los gastos
+      await db.runAsync('DELETE FROM expenses');
+
+      // Eliminar todas las categorías personalizadas
+      await db.runAsync('DELETE FROM categories');
+
+      // Opcional: Resetear configuraciones excepto el tema
+      await db.runAsync('DELETE FROM settings WHERE key != ?', ['theme']);
+
+      console.log('Todos los datos han sido eliminados exitosamente');
+    }, 'clearAllData');
+  }
+
   async getExpenseCountForToday(): Promise<number> {
     return this.executeWithConnection(async (db) => {
       const today = new Date().toISOString().split('T')[0];
