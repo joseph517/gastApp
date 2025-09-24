@@ -1,34 +1,13 @@
-export const COLORS = {
+// Base colors that don't change between themes
+export const BASE_COLORS = {
   primary: '#4F46E5',      // Azul principal
   secondary: '#06B6D4',    // Cyan
   accent: '#8B5CF6',       // Púrpura
   success: '#10B981',      // Verde
   warning: '#F59E0B',      // Amarillo
   error: '#EF4444',        // Rojo
-  
-  // Grises y neutrales
-  gray50: '#F9FAFB',
-  gray100: '#F3F4F6',
-  gray200: '#E5E7EB',
-  gray300: '#D1D5DB',
-  gray400: '#9CA3AF',
-  gray500: '#6B7280',
-  gray600: '#4B5563',
-  gray700: '#374151',
-  gray800: '#1F2937',
-  gray900: '#111827',
-  
-  // Background y superficie
-  background: '#FFFFFF',
-  surface: '#F9FAFB',
-  surfaceVariant: '#F3F4F6',
-  
-  // Texto
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
-  textLight: '#9CA3AF',
-  
-  // Categorías
+
+  // Categorías (same in both themes)
   categories: {
     comida: '#FF6B6B',
     transporte: '#4ECDC4',
@@ -40,6 +19,73 @@ export const COLORS = {
     otros: '#95A5A6'
   }
 };
+
+// Light theme colors
+export const LIGHT_THEME = {
+  ...BASE_COLORS,
+
+  // Grises y neutrales
+  gray50: '#F9FAFB',
+  gray100: '#F3F4F6',
+  gray200: '#E5E7EB',
+  gray300: '#D1D5DB',
+  gray400: '#9CA3AF',
+  gray500: '#6B7280',
+  gray600: '#4B5563',
+  gray700: '#374151',
+  gray800: '#1F2937',
+  gray900: '#111827',
+
+  // Background y superficie
+  background: '#FFFFFF',
+  surface: '#F9FAFB',
+  surfaceVariant: '#F3F4F6',
+  cardBackground: '#FFFFFF',
+
+  // Texto
+  textPrimary: '#111827',
+  textSecondary: '#6B7280',
+  textLight: '#9CA3AF',
+
+  // Borders
+  border: '#E5E7EB',
+  borderLight: '#F3F4F6',
+};
+
+// Dark theme colors
+export const DARK_THEME = {
+  ...BASE_COLORS,
+
+  // Grises y neutrales (invertidos)
+  gray50: '#111827',
+  gray100: '#1F2937',
+  gray200: '#374151',
+  gray300: '#4B5563',
+  gray400: '#6B7280',
+  gray500: '#9CA3AF',
+  gray600: '#D1D5DB',
+  gray700: '#E5E7EB',
+  gray800: '#F3F4F6',
+  gray900: '#F9FAFB',
+
+  // Background y superficie
+  background: '#0F172A',
+  surface: '#1E293B',
+  surfaceVariant: '#334155',
+  cardBackground: '#1E293B',
+
+  // Texto
+  textPrimary: '#F1F5F9',
+  textSecondary: '#CBD5E1',
+  textLight: '#94A3B8',
+
+  // Borders
+  border: '#334155',
+  borderLight: '#475569',
+};
+
+// Default export (will be replaced by theme context)
+export const COLORS = LIGHT_THEME;
 
 export const SHADOWS = {
   small: {

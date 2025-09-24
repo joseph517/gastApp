@@ -1,4 +1,4 @@
-import { COLORS } from './colors';
+import { BASE_COLORS } from './colors';
 
 export interface CategoryData {
   name: string;
@@ -8,14 +8,14 @@ export interface CategoryData {
 }
 
 export const DEFAULT_CATEGORIES: CategoryData[] = [
-  { name: 'Comida', icon: '🍽️', color: COLORS.categories.comida, isPremium: false },
-  { name: 'Transporte', icon: '🚗', color: COLORS.categories.transporte, isPremium: false },
-  { name: 'Entretenimiento', icon: '🎬', color: COLORS.categories.entretenimiento, isPremium: false },
-  { name: 'Salud', icon: '⚕️', color: COLORS.categories.salud, isPremium: false },
-  { name: 'Compras', icon: '🛍️', color: COLORS.categories.compras, isPremium: false },
-  { name: 'Servicios', icon: '🔧', color: COLORS.categories.servicios, isPremium: false },
-  { name: 'Trabajo', icon: '💼', color: COLORS.categories.trabajo, isPremium: false },
-  { name: 'Otros', icon: '📝', color: COLORS.categories.otros, isPremium: false }
+  { name: 'Comida', icon: '🍽️', color: BASE_COLORS.categories.comida, isPremium: false },
+  { name: 'Transporte', icon: '🚗', color: BASE_COLORS.categories.transporte, isPremium: false },
+  { name: 'Entretenimiento', icon: '🎬', color: BASE_COLORS.categories.entretenimiento, isPremium: false },
+  { name: 'Salud', icon: '⚕️', color: BASE_COLORS.categories.salud, isPremium: false },
+  { name: 'Compras', icon: '🛍️', color: BASE_COLORS.categories.compras, isPremium: false },
+  { name: 'Servicios', icon: '🔧', color: BASE_COLORS.categories.servicios, isPremium: false },
+  { name: 'Trabajo', icon: '💼', color: BASE_COLORS.categories.trabajo, isPremium: false },
+  { name: 'Otros', icon: '📝', color: BASE_COLORS.categories.otros, isPremium: false }
 ];
 
 export const PREMIUM_CATEGORIES: CategoryData[] = [
