@@ -10,8 +10,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useExpenseStore } from "../store/expenseStore";
+import { useTheme } from "../contexts/ThemeContext";
 import {
-  COLORS,
   SPACING,
   FONT_SIZES,
   BORDER_RADIUS,
@@ -23,6 +23,7 @@ import PieChart from "../components/PieChart";
 const { width } = Dimensions.get("window");
 
 const StatisticsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const { colors } = useTheme();
   const {
     expenses,
     categories,
@@ -87,14 +88,14 @@ const StatisticsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         <Ionicons
           name={stats.percentageChange >= 0 ? "trending-up" : "trending-down"}
           size={16}
-          color={stats.percentageChange >= 0 ? COLORS.error : COLORS.success}
+          color={stats.percentageChange >= 0 ? colors.error : colors.success}
         />
         <Text
           style={[
             styles.changeText,
             {
               color:
-                stats.percentageChange >= 0 ? COLORS.error : COLORS.success,
+                stats.percentageChange >= 0 ? colors.error : colors.success,
             },
           ]}
         >
@@ -156,6 +157,8 @@ const StatisticsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     },
   ];
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -212,7 +215,7 @@ const StatisticsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                 <Ionicons
                   name="chevron-forward"
                   size={20}
-                  color={COLORS.background}
+                  color={colors.background}
                 />
               </View>
             </TouchableOpacity>
@@ -225,10 +228,10 @@ const StatisticsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
   },
   scrollView: {
     flex: 1,
@@ -240,15 +243,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZES.xxl,
     fontWeight: "700",
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   subtitle: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: 4,
   },
   statsCard: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.cardBackground,
     marginHorizontal: SPACING.md,
     marginBottom: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
@@ -258,7 +261,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: FONT_SIZES.lg,
     fontWeight: "700",
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     marginBottom: SPACING.md,
   },
   basicStats: {
@@ -273,18 +276,18 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: FONT_SIZES.xl,
     fontWeight: "700",
-    color: COLORS.primary,
+    color: colors.primary,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: "center",
   },
   statDivider: {
     width: 1,
     height: 40,
-    backgroundColor: COLORS.gray200,
+    backgroundColor: colors.gray200,
     marginHorizontal: SPACING.md,
   },
   changeIndicator: {
@@ -293,7 +296,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingTop: SPACING.sm,
     borderTopWidth: 1,
-    borderTopColor: COLORS.gray200,
+    borderTopColor: colors.gray200,
   },
   changeText: {
     fontSize: FONT_SIZES.sm,
@@ -301,7 +304,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   chartCard: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.cardBackground,
     marginHorizontal: SPACING.md,
     marginBottom: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
@@ -315,14 +318,14 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   freeLabel: {
-    backgroundColor: COLORS.success + "20",
+    backgroundColor: colors.success + "20",
     paddingHorizontal: SPACING.sm,
     paddingVertical: 4,
     borderRadius: BORDER_RADIUS.sm,
   },
   freeLabelText: {
     fontSize: FONT_SIZES.xs,
-    color: COLORS.success,
+    color: colors.success,
     fontWeight: "600",
   },
   premiumSection: {
@@ -336,7 +339,7 @@ const styles = StyleSheet.create({
   premiumTitle: {
     fontSize: FONT_SIZES.xl,
     fontWeight: "700",
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     textAlign: "center",
   },
   diamond: {
@@ -344,12 +347,12 @@ const styles = StyleSheet.create({
   },
   premiumSubtitle: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: "center",
     marginTop: 4,
   },
   upgradeButton: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     marginHorizontal: SPACING.md,
     marginTop: SPACING.lg,
     borderRadius: BORDER_RADIUS.lg,
@@ -364,7 +367,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: BORDER_RADIUS.full,
-    backgroundColor: COLORS.background + "20",
+    backgroundColor: colors.background + "20",
     alignItems: "center",
     justifyContent: "center",
     marginRight: SPACING.md,
@@ -378,12 +381,12 @@ const styles = StyleSheet.create({
   upgradeTitle: {
     fontSize: FONT_SIZES.lg,
     fontWeight: "700",
-    color: COLORS.background,
+    color: colors.background,
     marginBottom: 4,
   },
   upgradeDescription: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.background + "CC",
+    color: colors.background + "CC",
   },
 });
 

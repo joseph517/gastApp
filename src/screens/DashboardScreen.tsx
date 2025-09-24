@@ -11,8 +11,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useExpenseStore } from "../store/expenseStore";
+import { useTheme } from "../contexts/ThemeContext";
 import {
-  COLORS,
   SPACING,
   FONT_SIZES,
   BORDER_RADIUS,
@@ -24,6 +24,8 @@ import FloatingActionButton from "../components/FloatingActionButton";
 import { Period, CategoryTotal } from "../types";
 
 const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const {
     expenses,
     loading,
@@ -133,7 +135,7 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={48} color={COLORS.error} />
+          <Ionicons name="alert-circle" size={48} color={colors.error} />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={clearError}>
             <Text style={styles.retryButtonText}>Reintentar</Text>
@@ -200,8 +202,8 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                 size={16}
                 color={
                   periodStats.percentageChange >= 0
-                    ? COLORS.error
-                    : COLORS.success
+                    ? colors.error
+                    : colors.success
                 }
               />
               <Text
@@ -210,8 +212,8 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                   {
                     color:
                       periodStats.percentageChange >= 0
-                        ? COLORS.error
-                        : COLORS.success,
+                        ? colors.error
+                        : colors.success,
                   },
                 ]}
               >
@@ -250,7 +252,7 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               <Ionicons
                 name="receipt-outline"
                 size={48}
-                color={COLORS.gray300}
+                color={colors.gray300}
               />
               <Text style={styles.emptyStateText}>
                 No hay gastos registrados
@@ -272,10 +274,10 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
   },
   scrollView: {
     flex: 1,
@@ -287,15 +289,15 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: FONT_SIZES.xxl,
     fontWeight: "700",
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   subtitle: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: 4,
   },
   statsCard: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.cardBackground,
     marginHorizontal: SPACING.md,
     marginBottom: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
@@ -304,7 +306,7 @@ const styles = StyleSheet.create({
   },
   periodSelector: {
     flexDirection: "row",
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: BORDER_RADIUS.lg,
     padding: 4,
     marginBottom: SPACING.lg,
@@ -316,28 +318,28 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.md,
   },
   activePeriodButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
   },
   periodButtonText: {
     fontSize: FONT_SIZES.sm,
     fontWeight: "600",
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   activePeriodButtonText: {
-    color: COLORS.background,
+    color: colors.background,
   },
   totalContainer: {
     alignItems: "center",
   },
   totalLabel: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   totalAmount: {
     fontSize: FONT_SIZES.xxxl,
     fontWeight: "800",
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     marginBottom: SPACING.sm,
   },
   changeContainer: {
@@ -350,7 +352,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   chartCard: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.cardBackground,
     marginHorizontal: SPACING.md,
     marginBottom: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
@@ -358,7 +360,7 @@ const styles = StyleSheet.create({
     ...SHADOWS.small,
   },
   recentCard: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.cardBackground,
     marginHorizontal: SPACING.md,
     marginBottom: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
@@ -368,7 +370,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: FONT_SIZES.lg,
     fontWeight: "700",
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     marginBottom: SPACING.md,
     marginHorizontal: SPACING.md,
   },
@@ -381,7 +383,7 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.primary,
+    color: colors.primary,
     fontWeight: "600",
   },
   emptyState: {
@@ -392,13 +394,13 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: FONT_SIZES.md,
     fontWeight: "600",
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: SPACING.sm,
     textAlign: "center",
   },
   emptyStateSubtext: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textLight,
+    color: colors.textLight,
     marginTop: 4,
     textAlign: "center",
   },
@@ -410,19 +412,19 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.error,
+    color: colors.error,
     textAlign: "center",
     marginVertical: SPACING.md,
   },
   retryButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
   },
   retryButtonText: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.background,
+    color: colors.background,
     fontWeight: "600",
   },
 });

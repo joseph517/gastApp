@@ -10,8 +10,8 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../contexts/ThemeContext";
 import {
-  COLORS,
   SPACING,
   FONT_SIZES,
   BORDER_RADIUS,
@@ -33,6 +33,7 @@ interface SettingItem {
 }
 
 const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const { colors, isDark, toggleTheme } = useTheme();
   const [preferences, setPreferences] = useState<UserPreferences>({
     currency: "COP",
     dateFormat: "DD/MM/YYYY",
@@ -55,7 +56,6 @@ const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       const dateFormat = allSettings.dateFormat || "DD/MM/YYYY";
       const firstDayOfWeek = parseInt(allSettings.firstDayOfWeek || "1");
       const notifications = allSettings.notifications === "true";
-      const darkMode = allSettings.darkMode === "true";
       const premium = allSettings.isPremium === "true";
 
       setPreferences({
@@ -63,7 +63,7 @@ const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         dateFormat: dateFormat as "DD/MM/YYYY",
         firstDayOfWeek: firstDayOfWeek as 0 | 1,
         notifications,
-        darkMode,
+        darkMode: isDark, // Use theme context instead of database directly
       });
 
       setIsPremium(premium);
@@ -135,10 +135,11 @@ const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     {
       id: "darkMode",
       title: "Modo Oscuro",
-      subtitle: "Próximamente disponible",
+      subtitle: isDark ? "Activado" : "Desactivado",
       type: "toggle",
-      icon: "moon-outline",
-      value: preferences.darkMode,
+      icon: isDark ? "moon" : "moon-outline",
+      value: isDark,
+      onPress: toggleTheme,
     },
     {
       id: "currency",
@@ -249,7 +250,11 @@ const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           }
 
           if (item.type === "toggle") {
-            updateSetting(item.id, !item.value);
+            if (item.id === "darkMode" && item.onPress) {
+              item.onPress(); // Use theme context for dark mode
+            } else {
+              updateSetting(item.id, !item.value);
+            }
           } else if (item.onPress) {
             item.onPress();
           }
@@ -263,7 +268,7 @@ const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             <Ionicons
               name={item.icon}
               size={20}
-              color={isDisabled ? COLORS.gray400 : COLORS.primary}
+              color={isDisabled ? colors.gray400 : colors.primary}
             />
           </View>
           <View style={styles.settingText}>
@@ -292,14 +297,18 @@ const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               value={item.value}
               onValueChange={(value) => {
                 if (!isDisabled) {
-                  updateSetting(item.id, value);
+                  if (item.id === "darkMode" && item.onPress) {
+                    item.onPress(); // Use theme context for dark mode
+                  } else {
+                    updateSetting(item.id, value);
+                  }
                 }
               }}
               trackColor={{
-                false: COLORS.gray200,
-                true: COLORS.primary + "40",
+                false: colors.gray200,
+                true: colors.primary + "40",
               }}
-              thumbColor={item.value ? COLORS.primary : COLORS.gray400}
+              thumbColor={item.value ? colors.primary : colors.gray400}
               disabled={isDisabled}
             />
           )}
@@ -309,7 +318,7 @@ const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             <Ionicons
               name="chevron-forward"
               size={20}
-              color={isDisabled ? COLORS.gray300 : COLORS.gray400}
+              color={isDisabled ? colors.gray300 : colors.gray400}
             />
           )}
         </View>
@@ -330,6 +339,8 @@ const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     </View>
   );
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -349,7 +360,7 @@ const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         {/* Account Info */}
         <View style={styles.accountCard}>
           <View style={styles.accountIcon}>
-            <Ionicons name="person" size={24} color={COLORS.primary} />
+            <Ionicons name="person" size={24} color={colors.primary} />
           </View>
           <View style={styles.accountInfo}>
             <Text style={styles.accountName}>Usuario Local</Text>
@@ -370,138 +381,139 @@ const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.lg,
-  },
-  title: {
-    fontSize: FONT_SIZES.xxl,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-  },
-  premiumBadge: {
-    backgroundColor: COLORS.accent,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 4,
-    borderRadius: BORDER_RADIUS.sm,
-  },
-  premiumText: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.background,
-    fontWeight: "600",
-  },
-  accountCard: {
-    backgroundColor: COLORS.background,
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.lg,
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    ...SHADOWS.small,
-  },
-  accountIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: BORDER_RADIUS.full,
-    backgroundColor: COLORS.primary + "20",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: SPACING.md,
-  },
-  accountInfo: {
-    flex: 1,
-  },
-  accountName: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: "600",
-    color: COLORS.textPrimary,
-    marginBottom: 2,
-  },
-  accountType: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-  },
-  section: {
-    marginBottom: SPACING.lg,
-  },
-  sectionTitle: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: "600",
-    color: COLORS.textSecondary,
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.sm,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  sectionContent: {
-    backgroundColor: COLORS.background,
-    marginHorizontal: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
-    ...SHADOWS.small,
-  },
-  settingItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray100,
-  },
-  disabledItem: {
-    opacity: 0.6,
-  },
-  settingLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: BORDER_RADIUS.md,
-    backgroundColor: COLORS.primary + "10",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: SPACING.sm,
-  },
-  disabledIcon: {
-    backgroundColor: COLORS.gray100,
-  },
-  settingText: {
-    flex: 1,
-  },
-  settingTitle: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: "600",
-    color: COLORS.textPrimary,
-    marginBottom: 2,
-  },
-  disabledText: {
-    color: COLORS.gray400,
-  },
-  settingSubtitle: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-  },
-  disabledSubtitle: {
-    color: COLORS.gray300,
-  },
-  settingRight: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+const createStyles = (colors: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.surface,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.lg,
+    },
+    title: {
+      fontSize: FONT_SIZES.xxl,
+      fontWeight: "700",
+      color: colors.textPrimary,
+    },
+    premiumBadge: {
+      backgroundColor: colors.accent,
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: 4,
+      borderRadius: BORDER_RADIUS.sm,
+    },
+    premiumText: {
+      fontSize: FONT_SIZES.xs,
+      color: colors.background,
+      fontWeight: "600",
+    },
+    accountCard: {
+      backgroundColor: colors.cardBackground,
+      marginHorizontal: SPACING.md,
+      marginBottom: SPACING.lg,
+      padding: SPACING.lg,
+      borderRadius: BORDER_RADIUS.lg,
+      flexDirection: "row",
+      alignItems: "center",
+      ...SHADOWS.small,
+    },
+    accountIcon: {
+      width: 50,
+      height: 50,
+      borderRadius: BORDER_RADIUS.full,
+      backgroundColor: colors.primary + "20",
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: SPACING.md,
+    },
+    accountInfo: {
+      flex: 1,
+    },
+    accountName: {
+      fontSize: FONT_SIZES.lg,
+      fontWeight: "600",
+      color: colors.textPrimary,
+      marginBottom: 2,
+    },
+    accountType: {
+      fontSize: FONT_SIZES.sm,
+      color: colors.textSecondary,
+    },
+    section: {
+      marginBottom: SPACING.lg,
+    },
+    sectionTitle: {
+      fontSize: FONT_SIZES.md,
+      fontWeight: "600",
+      color: colors.textSecondary,
+      marginHorizontal: SPACING.md,
+      marginBottom: SPACING.sm,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    sectionContent: {
+      backgroundColor: colors.cardBackground,
+      marginHorizontal: SPACING.md,
+      borderRadius: BORDER_RADIUS.lg,
+      ...SHADOWS.small,
+    },
+    settingItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: SPACING.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    disabledItem: {
+      opacity: 0.6,
+    },
+    settingLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+    },
+    iconContainer: {
+      width: 32,
+      height: 32,
+      borderRadius: BORDER_RADIUS.md,
+      backgroundColor: colors.primary + "10",
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: SPACING.sm,
+    },
+    disabledIcon: {
+      backgroundColor: colors.gray100,
+    },
+    settingText: {
+      flex: 1,
+    },
+    settingTitle: {
+      fontSize: FONT_SIZES.md,
+      fontWeight: "600",
+      color: colors.textPrimary,
+      marginBottom: 2,
+    },
+    disabledText: {
+      color: colors.gray400,
+    },
+    settingSubtitle: {
+      fontSize: FONT_SIZES.sm,
+      color: colors.textSecondary,
+    },
+    disabledSubtitle: {
+      color: colors.gray300,
+    },
+    settingRight: {
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  });
 
 export default SettingsScreen;

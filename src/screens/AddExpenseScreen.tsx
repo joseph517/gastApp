@@ -14,8 +14,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useExpenseStore } from "../store/expenseStore";
+import { useTheme } from "../contexts/ThemeContext";
 import {
-  COLORS,
   SPACING,
   FONT_SIZES,
   BORDER_RADIUS,
@@ -25,6 +25,7 @@ import CategoryPicker from "../components/CategoryPicker";
 import { ExpenseFormData } from "../types";
 
 const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const { colors } = useTheme();
   const {
     categories,
     loading,
@@ -169,6 +170,8 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     });
   };
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -181,7 +184,7 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+            <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.title}>Agregar Gasto</Text>
           <View style={styles.placeholder} />
@@ -207,7 +210,7 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                 placeholder="0"
                 keyboardType="numeric"
                 returnKeyType="next"
-                placeholderTextColor={COLORS.gray300}
+                placeholderTextColor={colors.gray300}
               />
             </View>
             {formData.amount && (
@@ -229,7 +232,7 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               placeholder="Ej: Almuerzo en restaurante"
               returnKeyType="done"
               maxLength={100}
-              placeholderTextColor={COLORS.gray400}
+              placeholderTextColor={colors.gray400}
             />
           </View>
 
@@ -252,13 +255,13 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               <Ionicons
                 name="calendar-outline"
                 size={20}
-                color={COLORS.primary}
+                color={colors.primary}
               />
               <Text style={styles.dateText}>{formatDate(formData.date)}</Text>
               <Ionicons
                 name="chevron-forward"
                 size={20}
-                color={COLORS.gray400}
+                color={colors.gray400}
               />
             </TouchableOpacity>
           </View>
@@ -278,7 +281,7 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>{error}</Text>
               <TouchableOpacity onPress={clearError}>
-                <Ionicons name="close" size={20} color={COLORS.error} />
+                <Ionicons name="close" size={20} color={colors.error} />
               </TouchableOpacity>
             </View>
           )}
@@ -304,10 +307,10 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
   },
   keyboardView: {
     flex: 1,
@@ -318,7 +321,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.cardBackground,
     ...SHADOWS.small,
   },
   backButton: {
@@ -327,7 +330,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZES.xl,
     fontWeight: "700",
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   placeholder: {
     width: 40,
@@ -336,20 +339,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   limitInfo: {
-    backgroundColor: COLORS.primary + "10",
+    backgroundColor: colors.primary + "10",
     margin: SPACING.md,
     padding: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
     borderLeftWidth: 4,
-    borderLeftColor: COLORS.primary,
+    borderLeftColor: colors.primary,
   },
   limitText: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.primary,
+    color: colors.primary,
     fontWeight: "600",
   },
   amountSection: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.cardBackground,
     margin: SPACING.md,
     padding: SPACING.lg,
     borderRadius: BORDER_RADIUS.lg,
@@ -359,7 +362,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: FONT_SIZES.lg,
     fontWeight: "600",
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     marginBottom: SPACING.sm,
     alignSelf: "flex-start",
     width: "100%",
@@ -373,26 +376,26 @@ const styles = StyleSheet.create({
   currencySymbol: {
     fontSize: FONT_SIZES.xxxl,
     fontWeight: "700",
-    color: COLORS.primary,
+    color: colors.primary,
     marginRight: SPACING.xs,
   },
   amountInput: {
     fontSize: FONT_SIZES.xxxl,
     fontWeight: "700",
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     minWidth: 100,
     textAlign: "center",
     borderBottomWidth: 2,
-    borderBottomColor: COLORS.primary,
+    borderBottomColor: colors.primary,
     paddingVertical: SPACING.xs,
   },
   formattedAmount: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: SPACING.xs,
   },
   section: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.cardBackground,
     marginHorizontal: SPACING.md,
     marginVertical: SPACING.xs,
     padding: SPACING.lg,
@@ -401,9 +404,9 @@ const styles = StyleSheet.create({
   },
   textInput: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray200,
+    borderBottomColor: colors.gray200,
     paddingVertical: SPACING.sm,
   },
   dateButton: {
@@ -411,16 +414,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray200,
+    borderBottomColor: colors.gray200,
   },
   dateText: {
     flex: 1,
     fontSize: FONT_SIZES.md,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     marginLeft: SPACING.sm,
   },
   errorContainer: {
-    backgroundColor: COLORS.error + "10",
+    backgroundColor: colors.error + "10",
     marginHorizontal: SPACING.md,
     padding: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
@@ -431,14 +434,14 @@ const styles = StyleSheet.create({
   errorText: {
     flex: 1,
     fontSize: FONT_SIZES.sm,
-    color: COLORS.error,
+    color: colors.error,
   },
   buttonContainer: {
     padding: SPACING.md,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.cardBackground,
   },
   submitButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
     paddingVertical: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
     alignItems: "center",
@@ -450,7 +453,7 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: FONT_SIZES.lg,
     fontWeight: "700",
-    color: COLORS.background,
+    color: colors.background,
   },
 });
 
