@@ -171,7 +171,7 @@ class DatabaseService {
   async addExpense(expense: Omit<Expense, 'id' | 'createdAt' | 'synced'>): Promise<number> {
     return this.executeWithConnection(async (db) => {
       const result = await db.runAsync(
-        'INSERT INTO expenses (amount, description, category, date) VALUES (?, ?, ?, ?)',
+        'INSERT INTO expenses (amount, description, category, date, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)',
         [expense.amount, expense.description, expense.category, expense.date]
       );
       return result.lastInsertRowId;
@@ -234,7 +234,18 @@ class DatabaseService {
 
   async updateExpense(id: number, data: Partial<Expense>): Promise<void> {
     return this.executeWithConnection(async (db) => {
-      const fields = Object.keys(data).filter(key => key !== 'id').map(key => `${key} = ?`);
+      // Map camelCase to snake_case for database columns
+      const fieldMap: Record<string, string> = {
+        'createdAt': 'created_at'
+      };
+
+      const fields = Object.keys(data)
+        .filter(key => key !== 'id')
+        .map(key => {
+          const dbField = fieldMap[key] || key;
+          return `${dbField} = ?`;
+        });
+
       const values = Object.values(data).filter((_, index) => Object.keys(data)[index] !== 'id');
 
       if (fields.length === 0) return;
