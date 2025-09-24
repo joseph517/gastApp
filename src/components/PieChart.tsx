@@ -35,7 +35,7 @@ const PieChart: React.FC<PieChartProps> = ({ data }) => {
           <View style={styles.centerContent}>
             <Text style={styles.totalLabel}>Total</Text>
             <Text style={styles.totalAmount}>
-              {new Intl.NumberFormat("es-CL", {
+              {new Intl.NumberFormat("es-CO", {
                 style: "currency",
                 currency: "COP",
               }).format(data.reduce((sum, item) => sum + item.total, 0))}

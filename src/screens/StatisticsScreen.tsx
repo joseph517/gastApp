@@ -64,7 +64,7 @@ const StatisticsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("es-CL", {
+    return new Intl.NumberFormat("es-CO", {
       style: "currency",
       currency: "COP",
     }).format(amount);

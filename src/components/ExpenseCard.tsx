@@ -23,7 +23,7 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({
 }) => {
   const { colors } = useTheme();
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("es-CL", {
+    return new Intl.NumberFormat("es-CO", {
       style: "currency",
       currency: "COP",
     }).format(amount);
@@ -31,7 +31,7 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("es-CL", {
+    return date.toLocaleDateString("es-CO", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",

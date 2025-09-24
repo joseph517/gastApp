@@ -155,14 +155,14 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount)) return amount;
 
-    return new Intl.NumberFormat("es-CL", {
+    return new Intl.NumberFormat("es-CO", {
       style: "currency",
       currency: "COP",
     }).format(numAmount);
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString("es-CL", {
+    return date.toLocaleDateString("es-CO", {
       weekday: "long",
       year: "numeric",
       month: "long",

@@ -112,7 +112,7 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("es-CL", {
+    return new Intl.NumberFormat("es-CO", {
       style: "currency",
       currency: "COP",
     }).format(amount);
@@ -267,166 +267,167 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      <FloatingActionButton
+      {/* <FloatingActionButton
         onPress={() => navigation.navigate("AddExpenseTab")}
-      />
+      /> */}
     </SafeAreaView>
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.surface,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.lg,
-  },
-  greeting: {
-    fontSize: FONT_SIZES.xxl,
-    fontWeight: "700",
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: FONT_SIZES.md,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  statsCard: {
-    backgroundColor: colors.cardBackground,
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
-    ...SHADOWS.small,
-  },
-  periodSelector: {
-    flexDirection: "row",
-    backgroundColor: colors.surface,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: 4,
-    marginBottom: SPACING.lg,
-  },
-  periodButton: {
-    flex: 1,
-    paddingVertical: SPACING.sm,
-    alignItems: "center",
-    borderRadius: BORDER_RADIUS.md,
-  },
-  activePeriodButton: {
-    backgroundColor: colors.primary,
-  },
-  periodButtonText: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: "600",
-    color: colors.textSecondary,
-  },
-  activePeriodButtonText: {
-    color: colors.background,
-  },
-  totalContainer: {
-    alignItems: "center",
-  },
-  totalLabel: {
-    fontSize: FONT_SIZES.md,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  totalAmount: {
-    fontSize: FONT_SIZES.xxxl,
-    fontWeight: "800",
-    color: colors.textPrimary,
-    marginBottom: SPACING.sm,
-  },
-  changeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  changeText: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: "600",
-    marginLeft: 4,
-  },
-  chartCard: {
-    backgroundColor: colors.cardBackground,
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
-    ...SHADOWS.small,
-  },
-  recentCard: {
-    backgroundColor: colors.cardBackground,
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
-    paddingTop: SPACING.lg,
-    ...SHADOWS.small,
-  },
-  cardTitle: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: "700",
-    color: colors.textPrimary,
-    marginBottom: SPACING.md,
-    marginHorizontal: SPACING.md,
-  },
-  recentHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: SPACING.md,
-    marginBottom: SPACING.sm,
-  },
-  viewAllText: {
-    fontSize: FONT_SIZES.sm,
-    color: colors.primary,
-    fontWeight: "600",
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: SPACING.xl,
-    paddingHorizontal: SPACING.md,
-  },
-  emptyStateText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: "600",
-    color: colors.textSecondary,
-    marginTop: SPACING.sm,
-    textAlign: "center",
-  },
-  emptyStateSubtext: {
-    fontSize: FONT_SIZES.sm,
-    color: colors.textLight,
-    marginTop: 4,
-    textAlign: "center",
-  },
-  errorContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: SPACING.md,
-  },
-  errorText: {
-    fontSize: FONT_SIZES.md,
-    color: colors.error,
-    textAlign: "center",
-    marginVertical: SPACING.md,
-  },
-  retryButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.md,
-  },
-  retryButtonText: {
-    fontSize: FONT_SIZES.md,
-    color: colors.background,
-    fontWeight: "600",
-  },
-});
+const createStyles = (colors: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.surface,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    header: {
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.lg,
+    },
+    greeting: {
+      fontSize: FONT_SIZES.xxl,
+      fontWeight: "700",
+      color: colors.textPrimary,
+    },
+    subtitle: {
+      fontSize: FONT_SIZES.md,
+      color: colors.textSecondary,
+      marginTop: 4,
+    },
+    statsCard: {
+      backgroundColor: colors.cardBackground,
+      marginHorizontal: SPACING.md,
+      marginBottom: SPACING.md,
+      borderRadius: BORDER_RADIUS.lg,
+      padding: SPACING.lg,
+      ...SHADOWS.small,
+    },
+    periodSelector: {
+      flexDirection: "row",
+      backgroundColor: colors.surface,
+      borderRadius: BORDER_RADIUS.lg,
+      padding: 4,
+      marginBottom: SPACING.lg,
+    },
+    periodButton: {
+      flex: 1,
+      paddingVertical: SPACING.sm,
+      alignItems: "center",
+      borderRadius: BORDER_RADIUS.md,
+    },
+    activePeriodButton: {
+      backgroundColor: colors.primary,
+    },
+    periodButtonText: {
+      fontSize: FONT_SIZES.sm,
+      fontWeight: "600",
+      color: colors.textSecondary,
+    },
+    activePeriodButtonText: {
+      color: colors.background,
+    },
+    totalContainer: {
+      alignItems: "center",
+    },
+    totalLabel: {
+      fontSize: FONT_SIZES.md,
+      color: colors.textSecondary,
+      marginBottom: 4,
+    },
+    totalAmount: {
+      fontSize: FONT_SIZES.xxxl,
+      fontWeight: "800",
+      color: colors.textPrimary,
+      marginBottom: SPACING.sm,
+    },
+    changeContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    changeText: {
+      fontSize: FONT_SIZES.sm,
+      fontWeight: "600",
+      marginLeft: 4,
+    },
+    chartCard: {
+      backgroundColor: colors.cardBackground,
+      marginHorizontal: SPACING.md,
+      marginBottom: SPACING.md,
+      borderRadius: BORDER_RADIUS.lg,
+      padding: SPACING.lg,
+      ...SHADOWS.small,
+    },
+    recentCard: {
+      backgroundColor: colors.cardBackground,
+      marginHorizontal: SPACING.md,
+      marginBottom: SPACING.md,
+      borderRadius: BORDER_RADIUS.lg,
+      paddingTop: SPACING.lg,
+      ...SHADOWS.small,
+    },
+    cardTitle: {
+      fontSize: FONT_SIZES.lg,
+      fontWeight: "700",
+      color: colors.textPrimary,
+      marginBottom: SPACING.md,
+      marginHorizontal: SPACING.md,
+    },
+    recentHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: SPACING.md,
+      marginBottom: SPACING.sm,
+    },
+    viewAllText: {
+      fontSize: FONT_SIZES.sm,
+      color: colors.primary,
+      fontWeight: "600",
+    },
+    emptyState: {
+      alignItems: "center",
+      paddingVertical: SPACING.xl,
+      paddingHorizontal: SPACING.md,
+    },
+    emptyStateText: {
+      fontSize: FONT_SIZES.md,
+      fontWeight: "600",
+      color: colors.textSecondary,
+      marginTop: SPACING.sm,
+      textAlign: "center",
+    },
+    emptyStateSubtext: {
+      fontSize: FONT_SIZES.sm,
+      color: colors.textLight,
+      marginTop: 4,
+      textAlign: "center",
+    },
+    errorContainer: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: SPACING.md,
+    },
+    errorText: {
+      fontSize: FONT_SIZES.md,
+      color: colors.error,
+      textAlign: "center",
+      marginVertical: SPACING.md,
+    },
+    retryButton: {
+      backgroundColor: colors.primary,
+      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.sm,
+      borderRadius: BORDER_RADIUS.md,
+    },
+    retryButtonText: {
+      fontSize: FONT_SIZES.md,
+      color: colors.background,
+      fontWeight: "600",
+    },
+  });
 
 export default DashboardScreen;
