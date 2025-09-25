@@ -1,4 +1,4 @@
-import { BASE_COLORS } from './colors';
+import { BASE_COLORS } from "./colors";
 
 export interface CategoryData {
   name: string;
@@ -8,26 +8,66 @@ export interface CategoryData {
 }
 
 export const DEFAULT_CATEGORIES: CategoryData[] = [
-  { name: 'Comida', icon: '🍽️', color: BASE_COLORS.categories.comida, isPremium: false },
-  { name: 'Transporte', icon: '🚗', color: BASE_COLORS.categories.transporte, isPremium: false },
-  { name: 'Entretenimiento', icon: '🎬', color: BASE_COLORS.categories.entretenimiento, isPremium: false },
-  { name: 'Salud', icon: '⚕️', color: BASE_COLORS.categories.salud, isPremium: false },
-  { name: 'Compras', icon: '🛍️', color: BASE_COLORS.categories.compras, isPremium: false },
-  { name: 'Servicios', icon: '🔧', color: BASE_COLORS.categories.servicios, isPremium: false },
-  { name: 'Trabajo', icon: '💼', color: BASE_COLORS.categories.trabajo, isPremium: false },
-  { name: 'Otros', icon: '📝', color: BASE_COLORS.categories.otros, isPremium: false }
+  {
+    name: "Comida",
+    icon: "🍽️",
+    color: BASE_COLORS.categories.comida,
+    isPremium: false,
+  },
+  {
+    name: "Transporte",
+    icon: "🚗",
+    color: BASE_COLORS.categories.transporte,
+    isPremium: false,
+  },
+  {
+    name: "Entretenimiento",
+    icon: "🎬",
+    color: BASE_COLORS.categories.entretenimiento,
+    isPremium: false,
+  },
+  {
+    name: "Salud",
+    icon: "⚕️",
+    color: BASE_COLORS.categories.salud,
+    isPremium: false,
+  },
+  {
+    name: "Compras",
+    icon: "🛍️",
+    color: BASE_COLORS.categories.compras,
+    isPremium: false,
+  },
+  {
+    name: "Servicios",
+    icon: "🔧",
+    color: BASE_COLORS.categories.servicios,
+    isPremium: false,
+  },
+  {
+    name: "Trabajo",
+    icon: "💼",
+    color: BASE_COLORS.categories.trabajo,
+    isPremium: false,
+  },
+  {
+    name: "Otros",
+    icon: "📝",
+    color: BASE_COLORS.categories.otros,
+    isPremium: false,
+  },
 ];
 
 export const PREMIUM_CATEGORIES: CategoryData[] = [
-  { name: 'Inversiones', icon: '📈', color: '#8E44AD', isPremium: true },
-  { name: 'Educación', icon: '📚', color: '#E67E22', isPremium: true },
-  { name: 'Mascotas', icon: '🐕', color: '#F39C12', isPremium: true },
-  { name: 'Regalos', icon: '🎁', color: '#E91E63', isPremium: true },
-  { name: 'Hogar', icon: '🏠', color: '#795548', isPremium: true },
+  { name: "Inversiones", icon: "📈", color: "#8E44AD", isPremium: true },
+  { name: "Educación", icon: "📚", color: "#E67E22", isPremium: true },
+  { name: "Mascotas", icon: "🐕", color: "#F39C12", isPremium: true },
+  { name: "Regalos", icon: "🎁", color: "#E91E63", isPremium: true },
+  { name: "Hogar", icon: "🏠", color: "#795548", isPremium: true },
 ];
 
 export const FREE_TIER_LIMITS = {
   maxExpensesPerDay: 5,
-  historyDays: 30,
+  historyDays: 90,
   maxCategories: DEFAULT_CATEGORIES.length,
 };
