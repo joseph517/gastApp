@@ -91,8 +91,36 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       return;
     }
 
+    // Validación de fecha - solo permitir últimos 3 meses
+    const selectedDate = formData.date;
+    const today = new Date();
+
+    // Calcular 3 meses atrás correctamente
+    const threeMonthsAgo = new Date(today);
+    threeMonthsAgo.setDate(today.getDate() - 90); // 90 días = aproximadamente 3 meses
+
+
+    if (selectedDate < threeMonthsAgo) {
+      Alert.alert(
+        "Fecha no válida",
+        "Solo puedes agregar gastos de los últimos 3 meses. Por favor selecciona una fecha más reciente.",
+        [{ text: "Entendido", style: "default" }]
+      );
+      return;
+    }
+
+    if (selectedDate > today) {
+      Alert.alert(
+        "Fecha no válida",
+        "No puedes agregar gastos con fecha futura.",
+        [{ text: "Entendido", style: "default" }]
+      );
+      return;
+    }
+
     // Verificar límites
     const canAdd = await canAddExpense();
+
     if (!canAdd) {
       Alert.alert(
         "Límite alcanzado",
@@ -273,6 +301,11 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               display={Platform.OS === "ios" ? "spinner" : "default"}
               onChange={handleDateChange}
               maximumDate={new Date()}
+              minimumDate={(() => {
+                const threeMonthsAgo = new Date();
+                threeMonthsAgo.setDate(threeMonthsAgo.getDate() - 90); // 90 días = aproximadamente 3 meses
+                return threeMonthsAgo;
+              })()}
             />
           )}
 
