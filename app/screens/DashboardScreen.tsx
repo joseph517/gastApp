@@ -37,6 +37,7 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     getTotalsByCategory,
     getRecentExpenses,
     getPeriodStats,
+    importTestData,
   } = useExpenseStore();
 
   const [selectedPeriod, setSelectedPeriod] = useState<Period>("month");
@@ -60,23 +61,48 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const loadDashboardData = async () => {
     try {
-      // Calcular fechas basadas en el período seleccionado
-      const endDate = new Date();
-      const startDate = new Date();
+      // Usar el mismo sistema de fechas calendarias que getPeriodStats
+      const now = new Date();
+      let startDate: Date, endDate: Date;
 
       switch (selectedPeriod) {
         case "week":
-          startDate.setDate(endDate.getDate() - 7);
+          // Semana calendario actual (lunes a domingo)
+          const day = now.getDay();
+          const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+          startDate = new Date(now);
+          startDate.setDate(diff);
+          startDate.setHours(0, 0, 0, 0);
+
+          endDate = new Date(startDate);
+          endDate.setDate(startDate.getDate() + 6);
+          endDate.setHours(23, 59, 59, 999);
           break;
+
         case "month":
-          startDate.setMonth(endDate.getMonth() - 1);
+          // Mes calendario actual
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          startDate.setHours(0, 0, 0, 0);
+
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+          endDate.setHours(23, 59, 59, 999);
           break;
+
         case "year":
-          startDate.setFullYear(endDate.getFullYear() - 1);
+          // Año calendario actual
+          startDate = new Date(now.getFullYear(), 0, 1);
+          startDate.setHours(0, 0, 0, 0);
+
+          endDate = new Date(now.getFullYear(), 11, 31);
+          endDate.setHours(23, 59, 59, 999);
           break;
+
+        default:
+          startDate = new Date(now);
+          endDate = new Date(now);
       }
 
-      // Obtener totales por categoría
+      // Obtener totales por categoría usando las mismas fechas
       const totals = await getTotalsByCategory(
         startDate.toISOString().split("T")[0],
         endDate.toISOString().split("T")[0]
@@ -106,6 +132,29 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           text: "Eliminar",
           style: "destructive",
           onPress: () => deleteExpense(expenseId),
+        },
+      ]
+    );
+  };
+
+  const handleImportTestData = async () => {
+    Alert.alert(
+      "Importar Datos de Prueba",
+      "¿Quieres importar 53 gastos de prueba de agosto y septiembre?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Importar",
+          style: "default",
+          onPress: async () => {
+            const success = await importTestData();
+            if (success) {
+              await loadDashboardData();
+              Alert.alert("¡Éxito!", "Datos de prueba importados correctamente");
+            } else {
+              Alert.alert("Error", "No se pudieron importar los datos");
+            }
+          },
         },
       ]
     );
@@ -155,8 +204,17 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>¡Hola! 👋</Text>
-          <Text style={styles.subtitle}>Controla tus gastos</Text>
+          <View>
+            <Text style={styles.greeting}>¡Hola! 👋</Text>
+            <Text style={styles.subtitle}>Controla tus gastos</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.testDataButton}
+            onPress={handleImportTestData}
+          >
+            <Ionicons name="download-outline" size={16} color={colors.primary} />
+            <Text style={styles.testDataButtonText}>Test Data</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Period Stats */}
@@ -286,6 +344,9 @@ const createStyles = (colors: any) =>
     header: {
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.lg,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
     },
     greeting: {
       fontSize: FONT_SIZES.xxl,
@@ -296,6 +357,22 @@ const createStyles = (colors: any) =>
       fontSize: FONT_SIZES.md,
       color: colors.textSecondary,
       marginTop: 4,
+    },
+    testDataButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: SPACING.xs,
+      backgroundColor: colors.primary + "15",
+      borderRadius: BORDER_RADIUS.sm,
+      borderWidth: 1,
+      borderColor: colors.primary + "30",
+    },
+    testDataButtonText: {
+      fontSize: FONT_SIZES.xs,
+      color: colors.primary,
+      fontWeight: "600",
+      marginLeft: 4,
     },
     statsCard: {
       backgroundColor: colors.cardBackground,
