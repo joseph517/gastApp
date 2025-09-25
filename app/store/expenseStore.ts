@@ -32,6 +32,7 @@ interface ExpenseStore {
   // Utilidades
   clearError: () => void;
   clearAllData: () => Promise<void>;
+  importTestData: () => Promise<boolean>;
   setLoading: (loading: boolean) => void;
 }
 
@@ -236,54 +237,129 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
   getPeriodStats: async (period) => {
     const { expenses } = get();
     const now = new Date();
-    
-    // Calcular fechas para el período actual
-    let currentStart: Date, previousStart: Date, previousEnd: Date;
-    
+
+    // Funciones auxiliares para calcular períodos calendarios
+    const getWeekBounds = (date: Date) => {
+      const d = new Date(date);
+      // Lunes como primer día de la semana (1 = lunes, 0 = domingo)
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(d.setDate(diff));
+      monday.setHours(0, 0, 0, 0);
+
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+
+      return { start: monday, end: sunday };
+    };
+
+    const getMonthBounds = (date: Date) => {
+      const start = new Date(date.getFullYear(), date.getMonth(), 1);
+      start.setHours(0, 0, 0, 0);
+
+      const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      end.setHours(23, 59, 59, 999);
+
+      return { start, end };
+    };
+
+    const getYearBounds = (date: Date) => {
+      const start = new Date(date.getFullYear(), 0, 1);
+      start.setHours(0, 0, 0, 0);
+
+      const end = new Date(date.getFullYear(), 11, 31);
+      end.setHours(23, 59, 59, 999);
+
+      return { start, end };
+    };
+
+    // Calcular fechas para el período actual y anterior
+    let currentStart: Date, currentEnd: Date, previousStart: Date, previousEnd: Date;
+
     switch (period) {
       case 'week':
-        currentStart = new Date(now);
-        currentStart.setDate(now.getDate() - 7);
-        previousStart = new Date(currentStart);
-        previousStart.setDate(currentStart.getDate() - 7);
-        previousEnd = new Date(currentStart);
+        // Período actual: semana calendario actual
+        const currentWeek = getWeekBounds(now);
+        currentStart = currentWeek.start;
+        currentEnd = currentWeek.end;
+
+        // Período anterior: semana anterior
+        const previousWeekDate = new Date(now);
+        previousWeekDate.setDate(now.getDate() - 7);
+        const previousWeek = getWeekBounds(previousWeekDate);
+        previousStart = previousWeek.start;
+        previousEnd = previousWeek.end;
         break;
+
       case 'month':
-        currentStart = new Date(now);
-        currentStart.setMonth(now.getMonth() - 1);
-        previousStart = new Date(currentStart);
-        previousStart.setMonth(currentStart.getMonth() - 1);
-        previousEnd = new Date(currentStart);
+        // Período actual: mes calendario actual
+        const currentMonth = getMonthBounds(now);
+        currentStart = currentMonth.start;
+        currentEnd = currentMonth.end;
+
+        // Para meses, comparar con el promedio de los 3 meses anteriores
+        const month1Date = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const month2Date = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+        const month3Date = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+
+        const month3Bounds = getMonthBounds(month3Date);
+        const month1Bounds = getMonthBounds(month1Date);
+
+        previousStart = month3Bounds.start;
+        previousEnd = month1Bounds.end;
         break;
+
       case 'year':
-        currentStart = new Date(now);
-        currentStart.setFullYear(now.getFullYear() - 1);
-        previousStart = new Date(currentStart);
-        previousStart.setFullYear(currentStart.getFullYear() - 1);
-        previousEnd = new Date(currentStart);
+        // Período actual: año calendario actual
+        const currentYear = getYearBounds(now);
+        currentStart = currentYear.start;
+        currentEnd = currentYear.end;
+
+        // Período anterior: año anterior
+        const previousYearDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+        const previousYear = getYearBounds(previousYearDate);
+        previousStart = previousYear.start;
+        previousEnd = previousYear.end;
         break;
     }
-    
+
     const currentStartStr = currentStart.toISOString().split('T')[0];
-    const currentEndStr = now.toISOString().split('T')[0];
+    const currentEndStr = currentEnd.toISOString().split('T')[0];
     const previousStartStr = previousStart.toISOString().split('T')[0];
     const previousEndStr = previousEnd.toISOString().split('T')[0];
-    
+
     // Calcular totales
     const currentExpenses = expenses.filter(
       e => e.date >= currentStartStr && e.date <= currentEndStr
     );
-    const previousExpenses = expenses.filter(
-      e => e.date >= previousStartStr && e.date <= previousEndStr
-    );
-    
+
+    let previousTotal = 0;
+
+    if (period === 'month') {
+      // Para meses, calcular el promedio de los 3 meses calendarios anteriores
+      const previousExpenses = expenses.filter(
+        e => e.date >= previousStartStr && e.date <= previousEndStr
+      );
+
+      // Como estamos usando exactamente 3 meses calendarios completos,
+      // dividimos el total entre 3 para obtener el promedio mensual
+      const totalPreviousAmount = previousExpenses.reduce((sum, e) => sum + e.amount, 0);
+      previousTotal = totalPreviousAmount / 3;
+    } else {
+      // Para semanas y años, usar comparación directa con el período anterior
+      const previousExpenses = expenses.filter(
+        e => e.date >= previousStartStr && e.date <= previousEndStr
+      );
+      previousTotal = previousExpenses.reduce((sum, e) => sum + e.amount, 0);
+    }
+
     const total = currentExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const previousTotal = previousExpenses.reduce((sum, e) => sum + e.amount, 0);
-    
-    const percentageChange = previousTotal > 0 
-      ? ((total - previousTotal) / previousTotal) * 100 
-      : 0;
-    
+
+    const percentageChange = previousTotal > 0
+      ? ((total - previousTotal) / previousTotal) * 100
+      : total > 0 ? 100 : 0; // Si no hay datos anteriores pero sí actuales, mostrar 100% de incremento
+
     return {
       total,
       previousTotal,
@@ -313,13 +389,19 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
       set({ loading: true, error: null });
       await databaseService.clearAllData();
 
-      // Limpiar el estado del store
+      // Reinsertar categorías predeterminadas después de borrar todo
+      await databaseService.reinitializeDefaultData();
+
+      // Limpiar y recargar el estado del store
       set({
         expenses: [],
-        categories: [],
         loading: false,
         error: null,
       });
+
+      // Recargar categorías predeterminadas
+      await get().loadCategories();
+
     } catch (error) {
       console.error('Error clearing all data:', error);
       set({
@@ -328,6 +410,36 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
       });
     }
   },
+
+  importTestData: async () => {
+    try {
+      set({ loading: true, error: null });
+      console.log('🚀 Iniciando importación de datos de prueba...');
+      await databaseService.importTestData();
+
+      console.log('🔄 Recargando gastos...');
+      await get().getExpenses(); // Recargar gastos
+
+      const { expenses } = get();
+      console.log(`📊 Gastos en el store después de recargar: ${expenses.length}`);
+
+      set({ loading: false });
+      console.log('✅ Datos de prueba importados correctamente');
+      return true;
+    } catch (error) {
+      console.error('❌ Error importing test data:', error);
+      set({ error: 'Error al importar datos de prueba', loading: false });
+      return false;
+    }
+  },
   
   setLoading: (loading) => set({ loading }),
 }));
+
+// Función global temporal para importar datos de prueba desde la consola
+if (typeof window !== 'undefined') {
+  (window as any).importTestData = async () => {
+    const store = useExpenseStore.getState();
+    return await store.importTestData();
+  };
+}
