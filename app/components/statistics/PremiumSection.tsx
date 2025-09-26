@@ -10,12 +10,14 @@ interface PremiumSectionProps {
   features: PremiumFeature[];
   isPremium: boolean;
   onUpgradePress?: () => void;
+  navigation?: any;
 }
 
 const PremiumSection: React.FC<PremiumSectionProps> = ({
   features,
   isPremium,
-  onUpgradePress
+  onUpgradePress,
+  navigation
 }) => {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -36,7 +38,11 @@ const PremiumSection: React.FC<PremiumSectionProps> = ({
           key={feature.id}
           title={feature.title}
           description={feature.description}
-          disabled={!isPremium}
+          disabled={!isPremium && feature.id !== "advanced-analytics"}
+          onPress={feature.id === "advanced-analytics" ?
+            () => navigation?.navigate('Analytics') :
+            undefined
+          }
         />
       ))}
 

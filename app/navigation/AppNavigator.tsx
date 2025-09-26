@@ -11,6 +11,7 @@ import DashboardScreen from "../screens/DashboardScreen";
 import AddExpenseScreen from "../screens/AddExpenseScreen";
 import StatisticsScreen from "../screens/StatisticsScreen";
 import AnalyticsScreen from "../screens/AnalyticsScreen";
+import AnalyticsScreenTest from "../screens/AnalyticsScreenTest";
 import SettingsScreen from "../screens/SettingsScreen";
 
 const Tab = createBottomTabNavigator();
@@ -30,7 +31,10 @@ const AddExpenseStack = () => (
 );
 
 const StatisticsStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
+  <Stack.Navigator
+    initialRouteName="Statistics"
+    screenOptions={{ headerShown: false }}
+  >
     <Stack.Screen name="Statistics" component={StatisticsScreen} />
     <Stack.Screen name="Analytics" component={AnalyticsScreen} />
   </Stack.Navigator>

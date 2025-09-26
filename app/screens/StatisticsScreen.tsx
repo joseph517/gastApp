@@ -44,19 +44,10 @@ const StatisticsScreen: React.FC<StatisticsScreenProps> = ({ navigation }) => {
       >
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Estadísticas</Text>
-            <Text style={styles.subtitle}>
-              {isPremium ? "Premium" : "Versión Gratuita"}
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={styles.analyticsButton}
-            onPress={() => navigation.navigate('Analytics')}
-          >
-            <Ionicons name="analytics" size={20} color={colors.primary} />
-            <Text style={styles.analyticsButtonText}>Análisis Avanzado</Text>
-          </TouchableOpacity>
+          <Text style={styles.title}>Estadísticas</Text>
+          <Text style={styles.subtitle}>
+            {isPremium ? "Premium" : "Versión Gratuita"}
+          </Text>
         </View>
 
         <StatsCard stats={stats} formatCurrency={formatCurrency} />
@@ -67,6 +58,7 @@ const StatisticsScreen: React.FC<StatisticsScreenProps> = ({ navigation }) => {
           features={PREMIUM_FEATURES}
           isPremium={isPremium}
           onUpgradePress={handleUpgradePress}
+          navigation={navigation}
         />
 
         <View style={{ height: 100 }} />
@@ -94,9 +86,6 @@ const createStyles = (colors: ThemeColors, insets: { top: number }) =>
     header: {
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.lg,
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
     },
     title: {
       fontSize: FONT_SIZES.xxl,
@@ -107,22 +96,6 @@ const createStyles = (colors: ThemeColors, insets: { top: number }) =>
       fontSize: FONT_SIZES.md,
       color: colors.textSecondary,
       marginTop: 4,
-    },
-    analyticsButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: SPACING.sm,
-      paddingVertical: SPACING.xs,
-      backgroundColor: colors.primary + "15",
-      borderRadius: BORDER_RADIUS.sm,
-      borderWidth: 1,
-      borderColor: colors.primary + "30",
-    },
-    analyticsButtonText: {
-      fontSize: FONT_SIZES.xs,
-      color: colors.primary,
-      fontWeight: "600",
-      marginLeft: 4,
     },
   });
 
