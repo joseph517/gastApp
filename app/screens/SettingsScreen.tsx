@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Switch,
   Alert,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
 import {
@@ -35,6 +35,7 @@ interface SettingItem {
 
 const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors, isDark, toggleTheme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { clearAllData } = useExpenseStore();
   const [preferences, setPreferences] = useState<UserPreferences>({
     currency: "COP",
@@ -350,10 +351,10 @@ const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     </View>
   );
 
-  const styles = createStyles(colors);
+  const styles = createStyles(colors, insets);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -388,15 +389,16 @@ const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
         <View style={{ height: 100 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
-const createStyles = (colors: any) =>
+const createStyles = (colors: any, insets: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.surface,
+      paddingTop: insets.top,
     },
     scrollView: {
       flex: 1,

@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Dimensions,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useExpenseStore } from "../store/expenseStore";
 import { useTheme } from "../contexts/ThemeContext";
@@ -24,6 +24,7 @@ const { width } = Dimensions.get("window");
 
 const StatisticsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const {
     expenses,
     categories,
@@ -157,10 +158,10 @@ const StatisticsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     },
   ];
 
-  const styles = createStyles(colors);
+  const styles = createStyles(colors, insets);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -224,14 +225,15 @@ const StatisticsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
         <View style={{ height: 100 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: any, insets: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
+    paddingTop: insets.top,
   },
   scrollView: {
     flex: 1,
