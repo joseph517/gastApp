@@ -54,6 +54,11 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     checkTodayCount();
   }, []);
 
+  // Recargar categorías cuando cambie el estado premium
+  useEffect(() => {
+    loadCategories();
+  }, [isPremium]);
+
   useEffect(() => {
     if (categories.length > 0 && !formData.category) {
       setFormData((prev) => ({ ...prev, category: categories[0].name }));
@@ -269,7 +274,7 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
           {/* Category Picker */}
           <CategoryPicker
-            categories={categories.filter((cat) => !cat.isPremium)}
+            categories={categories}
             selectedCategory={formData.category}
             onSelectCategory={(category) =>
               setFormData((prev) => ({ ...prev, category }))
