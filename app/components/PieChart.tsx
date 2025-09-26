@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, Dimensions } from "react-native";
-import Svg, { Path, Text as SvgText } from "react-native-svg";
+import Svg, { Circle, Path, Text as SvgText } from "react-native-svg";
 import { useTheme } from "../contexts/ThemeContext";
 import { SPACING, FONT_SIZES, BORDER_RADIUS } from "../constants/colors";
 import { CategoryTotal } from "../types";
@@ -10,7 +10,7 @@ interface PieChartProps {
 }
 
 const { width } = Dimensions.get("window");
-const chartSize = width * 0.5;
+const chartSize = Math.min(width * 0.8, 280);
 
 // Funciones helper para calcular el gráfico de torta
 const createPieSlice = (
@@ -101,7 +101,6 @@ const PieChart: React.FC<PieChartProps> = ({ data }) => {
   }
 
   const chartData = prepareChartData(data);
-  const totalAmount = chartData.reduce((sum, item) => sum + item.total, 0);
 
   // Calcular ángulos para cada segmento
   let currentAngle = 0;
@@ -126,7 +125,6 @@ const PieChart: React.FC<PieChartProps> = ({ data }) => {
       <View style={styles.chartContainer}>
         <Svg height={chartSize} width={chartSize} style={styles.svgChart}>
           {segments.map((segment, index) => {
-            // Solo renderizar segmentos con ángulo > 1 grado para evitar segmentos invisibles
             if (segment.angle < 1) return null;
 
             const pathData = createPieSlice(
@@ -137,14 +135,37 @@ const PieChart: React.FC<PieChartProps> = ({ data }) => {
               segment.endAngle
             );
 
+            const midAngle = (segment.startAngle + segment.endAngle) / 2;
+            const labelRadius = radius * 0.55;
+            const labelPos = polarToCartesian(
+              centerX,
+              centerY,
+              labelRadius,
+              midAngle
+            );
+
             return (
-              <Path
-                key={`${segment.category}-${index}`}
-                d={pathData}
-                fill={segment.color}
-                stroke={colors.surface}
-                strokeWidth={2}
-              />
+              <React.Fragment key={`${segment.category}-${index}`}>
+                <Path
+                  d={pathData}
+                  fill={segment.color}
+                  stroke={colors.surface}
+                  strokeWidth={2}
+                />
+                {segment.angle > 15 && (
+                  <SvgText
+                    x={labelPos.x - 2}
+                    y={labelPos.y}
+                    fill={colors.textOnPrimary || "#fff"}
+                    fontSize="10"
+                    fontWeight="bold"
+                    textAnchor="middle"
+                    alignmentBaseline="middle"
+                  >
+                    {`${segment.percentage.toFixed(0)}%`}
+                  </SvgText>
+                )}
+              </React.Fragment>
             );
           })}
         </Svg>
@@ -196,35 +217,19 @@ const createStyles = (colors: any) =>
     svgChart: {
       backgroundColor: "transparent",
     },
-    centerContent: {
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      alignItems: "center",
-      justifyContent: "center",
-      transform: [{ translateX: -chartSize * 0.15 }, { translateY: -20 }],
-      minWidth: chartSize * 0.3,
-    },
-    totalLabel: {
-      fontSize: FONT_SIZES.sm,
-      color: colors.textSecondary,
-      marginBottom: 4,
-    },
-    totalAmount: {
-      fontSize: FONT_SIZES.lg,
-      fontWeight: "700",
-      color: colors.textPrimary,
-      textAlign: "center",
-    },
     legend: {
       width: "100%",
-      maxWidth: 300,
+      maxWidth: 320,
+      paddingHorizontal: SPACING.md,
     },
     legendItem: {
       flexDirection: "row",
       alignItems: "center",
-      paddingVertical: SPACING.xs,
-      paddingHorizontal: SPACING.sm,
+      justifyContent: "space-between",
+      marginVertical: SPACING.xs,
+      borderBottomWidth: 0.5,
+      borderBottomColor: colors.border || "#e0e0e0",
+      paddingBottom: SPACING.xs,
     },
     legendColor: {
       width: 12,
@@ -240,17 +245,10 @@ const createStyles = (colors: any) =>
     },
     legendPercentage: {
       fontSize: FONT_SIZES.sm,
-      fontWeight: "600",
+      fontWeight: "700",
       color: colors.textSecondary,
       minWidth: 40,
       textAlign: "right",
-    },
-    moreItems: {
-      fontSize: FONT_SIZES.sm,
-      color: colors.textSecondary,
-      textAlign: "center",
-      marginTop: SPACING.xs,
-      fontStyle: "italic",
     },
   });
 
