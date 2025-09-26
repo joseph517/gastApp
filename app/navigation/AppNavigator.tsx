@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 // Screens
 import DashboardScreen from "../screens/DashboardScreen";
 import AddExpenseScreen from "../screens/AddExpenseScreen";
+import StatisticsScreen from "../screens/StatisticsScreen";
 import AnalyticsScreen from "../screens/AnalyticsScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 
@@ -28,8 +29,9 @@ const AddExpenseStack = () => (
   </Stack.Navigator>
 );
 
-const AnalyticsStack = () => (
+const StatisticsStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Statistics" component={StatisticsScreen} />
     <Stack.Screen name="Analytics" component={AnalyticsScreen} />
   </Stack.Navigator>
 );
@@ -57,8 +59,8 @@ const TabNavigator = () => {
             case "AddExpenseTab":
               iconName = focused ? "add-circle" : "add-circle-outline";
               break;
-            case "AnalyticsTab":
-              iconName = focused ? "analytics" : "analytics-outline";
+            case "StatisticsTab":
+              iconName = focused ? "stats-chart" : "stats-chart-outline";
               break;
             case "SettingsTab":
               iconName = focused ? "settings" : "settings-outline";
@@ -95,10 +97,10 @@ const TabNavigator = () => {
         }}
       />
       <Tab.Screen
-        name="AnalyticsTab"
-        component={AnalyticsStack}
+        name="StatisticsTab"
+        component={StatisticsStack}
         options={{
-          tabBarLabel: "Análisis",
+          tabBarLabel: "Estadísticas",
         }}
       />
       <Tab.Screen

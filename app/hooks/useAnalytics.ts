@@ -6,6 +6,7 @@ export interface TimelineData {
   date: string;
   amount: number;
   label: string;
+  id: string;
 }
 
 export interface CategoryEvolution {
@@ -81,7 +82,8 @@ export const useAnalytics = () => {
       timeline.push({
         date: dateKey,
         amount,
-        label: date.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' })
+        label: date.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' }),
+        id: dateKey
       });
     }
 
@@ -189,8 +191,12 @@ export const useAnalytics = () => {
     });
 
     return Array.from(categoryTotals.entries())
-      .map(([name, amount]) => ({ name, amount }))
-      .sort((a, b) => b.amount - a.amount)
+      .map(([name, amount]) => ({
+        categoryName: name,
+        total: amount,
+        id: name
+      }))
+      .sort((a, b) => b.total - a.total)
       .slice(0, 5);
   };
 

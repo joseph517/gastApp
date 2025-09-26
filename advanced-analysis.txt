@@ -1,0 +1,64 @@
+ Gráficos de Tendencias
+1. Evolución temporal:
+
+Línea de gastos diarios/semanales/mensuales
+Promedio móvil para ver la tendencia real sin ruido
+Identificar patrones: "Gastas más los viernes" o "Diciembre es tu mes más alto"
+Gráfico de área acumulada para ver cómo crece el gasto en el mes
+
+2. Por categorías:
+
+Evolución de cada categoría en el tiempo
+Gráfico de pastel/dona animado mostrando distribución
+Categorías con mayor variación (más impredecibles)
+Top 5 categorías que más han crecido/disminuido
+
+Comparativas
+1. Entre períodos:
+
+Este mes vs mes anterior (% cambio)
+Mismo mes del año pasado vs este año
+Mejor/peor mes del año
+Días de la semana: cuánto gastas lunes vs viernes
+
+2. Entre categorías:
+
+Ranking de categorías por monto total
+Velocidad de gasto: cuántos días tardas en gastar $X en cada categoría
+Frecuencia: en qué categorías gastas más seguido vs las de compras grandes ocasionales
+
+3. Visualizaciones:
+
+Heat map calendario: cada día coloreado según intensidad de gasto
+Gráfico de barras comparativo período vs período
+Streamgraph para ver cómo cambia la composición en el tiempo
+
+🔮 Predicciones e Insights
+1. Proyecciones:
+
+"A este ritmo, gastarás $X este mes" (basado en días transcurridos)
+"Tu gasto promedio mensual es $X"
+Predicción del próximo mes basada en tendencia histórica
+"Si continúas como los últimos 30 días..."
+
+2. Detección de patrones:
+
+Gastos anormales: "Gastaste 3x más de lo normal en restaurantes"
+Rachas: "Llevas 5 días seguidos gastando en cafeterías"
+Estacionalidad: "Cada inicio de mes gastas más en supermercado"
+
+3. Insights automáticos:
+
+"Tu día más caro es el viernes con $X promedio"
+"Has reducido tus gastos 20% vs hace 3 meses"
+"Transportes representa el 25% de tus gastos totales"
+"Llevas X días sin gastar en [categoría]"
+
+Dashboard de Análisis
+Podrías organizar una pantalla con:
+
+KPIs principales: Total mes, promedio diario, gasto más alto
+Gráfico de tendencia principal
+Top categorías del período
+3-4 insights automáticos destacados
+Comparativa rápida vs período anterior

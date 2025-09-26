@@ -5,6 +5,7 @@ import {
   ScrollView,
   RefreshControl,
   Text,
+  TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../contexts/ThemeContext";
@@ -14,7 +15,8 @@ import TimelineChart from "../components/analytics/TimelineChart";
 import CategoryChart from "../components/analytics/CategoryChart";
 import MonthComparison from "../components/analytics/MonthComparison";
 import MonthlyPrediction from "../components/analytics/MonthlyPrediction";
-import { SPACING, FONT_SIZES } from "../constants/colors";
+import { SPACING, FONT_SIZES, BORDER_RADIUS } from "../constants/colors";
+import { Ionicons } from "@expo/vector-icons";
 
 interface AnalyticsScreenProps {
   navigation: any;
@@ -55,10 +57,19 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Análisis de Gastos</Text>
-          <Text style={styles.subtitle}>
-            Insights y tendencias de tus finanzas
-          </Text>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.primary} />
+            <Text style={styles.backButtonText}>Estadísticas</Text>
+          </TouchableOpacity>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>Análisis de Gastos</Text>
+            <Text style={styles.subtitle}>
+              Insights y tendencias de tus finanzas
+            </Text>
+          </View>
         </View>
 
         {/* Predicción mensual */}
@@ -97,6 +108,20 @@ const createStyles = (colors: any, insets: { top: number }) =>
     header: {
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.lg,
+    },
+    backButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: SPACING.md,
+      paddingVertical: SPACING.xs,
+    },
+    backButtonText: {
+      fontSize: FONT_SIZES.md,
+      color: colors.primary,
+      fontWeight: "600",
+      marginLeft: SPACING.xs,
+    },
+    titleContainer: {
       alignItems: "center",
     },
     title: {
