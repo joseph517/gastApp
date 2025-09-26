@@ -9,19 +9,13 @@ import {
   FONT_SIZES,
 } from "../constants/colors";
 import { Expense } from "../types";
-import { DEFAULT_CATEGORIES, PREMIUM_CATEGORIES } from "../constants/categories";
+import { getCategoryIcon } from "../utils/categoryUtils";
 
 interface ExpenseCardProps {
   expense: Expense;
   onPress?: () => void;
   onDelete?: () => void;
 }
-
-const getCategoryIcon = (categoryName: string): string => {
-  const allCategories = [...DEFAULT_CATEGORIES, ...PREMIUM_CATEGORIES];
-  const category = allCategories.find(cat => cat.name === categoryName);
-  return category?.icon || "📝";
-};
 
 const ExpenseCard: React.FC<ExpenseCardProps> = ({
   expense,
