@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import {
   View,
   StyleSheet,
@@ -6,17 +6,22 @@ import {
   RefreshControl,
   Text,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAnalytics } from "../hooks/useAnalytics";
 import { useExpenseStore } from "../store/expenseStore";
-import TimelineChart from "../components/analytics/TimelineChart";
-import CategoryChart from "../components/analytics/CategoryChart";
-import MonthComparison from "../components/analytics/MonthComparison";
-import MonthlyPrediction from "../components/analytics/MonthlyPrediction";
+import LoadingCard from "../components/analytics/LoadingCard";
 import { SPACING, FONT_SIZES, BORDER_RADIUS } from "../constants/colors";
 import { Ionicons } from "@expo/vector-icons";
+import { CategoryTotal } from "../types";
+
+// Lazy load componentes pesados
+const TimelineChart = React.lazy(() => import("../components/analytics/TimelineChart"));
+const CategoryChart = React.lazy(() => import("../components/analytics/CategoryChart"));
+const MonthComparison = React.lazy(() => import("../components/analytics/MonthComparison"));
+const MonthlyPrediction = React.lazy(() => import("../components/analytics/MonthlyPrediction"));
 
 interface AnalyticsScreenProps {
   navigation: any;
@@ -26,6 +31,13 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { loading } = useExpenseStore();
+  const [topCategories, setTopCategories] = React.useState<CategoryTotal[]>([]);
+  const [loadingStates, setLoadingStates] = React.useState({
+    prediction: true,
+    comparison: true,
+    timeline: true,
+    categories: true,
+  });
 
   const {
     timelineData,
@@ -38,11 +50,60 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
 
   const styles = createStyles(colors, insets);
 
+  // Actualizar estados de carga cuando los datos estén listos
+  React.useEffect(() => {
+    if (monthlyPrediction !== null) {
+      setLoadingStates(prev => ({ ...prev, prediction: false }));
+    }
+  }, [monthlyPrediction]);
+
+  React.useEffect(() => {
+    if (monthComparison !== null) {
+      setLoadingStates(prev => ({ ...prev, comparison: false }));
+    }
+  }, [monthComparison]);
+
+  React.useEffect(() => {
+    if (timelineData.length > 0) {
+      setLoadingStates(prev => ({ ...prev, timeline: false }));
+    }
+  }, [timelineData]);
+
+  // Cargar datos de forma progresiva
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const loadTopCategories = async () => {
+      try {
+        const categories = await getTopCategories("month");
+        if (isMounted) {
+          setTopCategories(categories);
+          setLoadingStates(prev => ({ ...prev, categories: false }));
+        }
+      } catch (error) {
+        console.error("Error loading categories:", error);
+        if (isMounted) {
+          setLoadingStates(prev => ({ ...prev, categories: false }));
+        }
+      }
+    };
+
+    if (!analyticsLoading) {
+      // Añadir un pequeño delay para mejorar la percepción de rendimiento
+      const timeoutId = setTimeout(loadTopCategories, 100);
+      return () => clearTimeout(timeoutId);
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [analyticsLoading, getTopCategories]);
+
   const handleRefresh = async () => {
     await refreshData();
+    const categories = await getTopCategories("month");
+    setTopCategories(categories);
   };
-
-  const topCategories = getTopCategories("month");
 
   const isLoading = loading || analyticsLoading;
 
@@ -73,20 +134,44 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
         </View>
 
         {/* Predicción mensual */}
-        <MonthlyPrediction prediction={monthlyPrediction} />
+        {loadingStates.prediction ? (
+          <LoadingCard height={300} />
+        ) : (
+          <Suspense fallback={<LoadingCard height={300} />}>
+            <MonthlyPrediction prediction={monthlyPrediction} />
+          </Suspense>
+        )}
 
         {/* Comparación mensual */}
-        <MonthComparison comparison={monthComparison} />
+        {loadingStates.comparison ? (
+          <LoadingCard height={200} />
+        ) : (
+          <Suspense fallback={<LoadingCard height={200} />}>
+            <MonthComparison comparison={monthComparison} />
+          </Suspense>
+        )}
 
         {/* Gráfico de línea temporal */}
-        <TimelineChart data={timelineData} />
+        {loadingStates.timeline ? (
+          <LoadingCard height={250} />
+        ) : (
+          <Suspense fallback={<LoadingCard height={250} />}>
+            <TimelineChart data={timelineData} />
+          </Suspense>
+        )}
 
         {/* Gráfico de categorías */}
-        <CategoryChart
-          data={topCategories}
-          title="Top 5 Categorías del Mes"
-          showPercentages={true}
-        />
+        {loadingStates.categories ? (
+          <LoadingCard height={350} />
+        ) : (
+          <Suspense fallback={<LoadingCard height={350} />}>
+            <CategoryChart
+              data={topCategories}
+              title="Top 5 Categorías del Mes"
+              showPercentages={true}
+            />
+          </Suspense>
+        )}
 
         {/* Espacio adicional para el bottom tab */}
         <View style={{ height: 100 }} />
