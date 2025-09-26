@@ -4,6 +4,7 @@ import Svg, { Circle, Path, Text as SvgText } from "react-native-svg";
 import { useTheme } from "../contexts/ThemeContext";
 import { SPACING, FONT_SIZES, BORDER_RADIUS } from "../constants/colors";
 import { CategoryTotal } from "../types";
+import { getCategoryIcon } from "../utils/categoryUtils";
 
 interface PieChartProps {
   data: CategoryTotal[];
@@ -177,9 +178,11 @@ const PieChart: React.FC<PieChartProps> = ({ data }) => {
             key={`legend-${item.category}-${index}`}
             style={styles.legendItem}
           >
-            <View
-              style={[styles.legendColor, { backgroundColor: item.color }]}
-            />
+            <View style={styles.legendIconContainer}>
+              <Text style={styles.legendIcon}>
+                {getCategoryIcon(item.category)}
+              </Text>
+            </View>
             <Text style={styles.legendText} numberOfLines={1}>
               {item.category}
             </Text>
@@ -236,6 +239,16 @@ const createStyles = (colors: any) =>
       height: 12,
       borderRadius: BORDER_RADIUS.sm,
       marginRight: SPACING.sm,
+    },
+    legendIconContainer: {
+      width: 24,
+      height: 24,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: SPACING.sm,
+    },
+    legendIcon: {
+      fontSize: 16,
     },
     legendText: {
       flex: 1,
