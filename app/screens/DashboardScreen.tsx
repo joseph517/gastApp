@@ -6,9 +6,9 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
-  SafeAreaView,
   Alert,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useExpenseStore } from "../store/expenseStore";
 import { useTheme } from "../contexts/ThemeContext";
@@ -25,7 +25,8 @@ import { Period, CategoryTotal } from "../types";
 
 const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors } = useTheme();
-  const styles = createStyles(colors);
+  const insets = useSafeAreaInsets();
+  const styles = createStyles(colors, insets);
   const {
     expenses,
     loading,
@@ -185,7 +186,7 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={48} color={colors.error} />
           <Text style={styles.errorText}>{error}</Text>
@@ -193,12 +194,12 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             <Text style={styles.retryButtonText}>Reintentar</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         refreshControl={
@@ -335,15 +336,16 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       {/* <FloatingActionButton
         onPress={() => navigation.navigate("AddExpenseTab")}
       /> */}
-    </SafeAreaView>
+    </View>
   );
 };
 
-const createStyles = (colors: any) =>
+const createStyles = (colors: any, insets: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.surface,
+      paddingTop: insets.top,
     },
     scrollView: {
       flex: 1,
