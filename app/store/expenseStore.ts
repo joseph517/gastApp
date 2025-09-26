@@ -34,6 +34,9 @@ interface ExpenseStore {
   clearAllData: () => Promise<void>;
   importTestData: () => Promise<boolean>;
   setLoading: (loading: boolean) => void;
+
+  // Premium
+  upgradeToPremium: () => Promise<void>;
 }
 
 export const useExpenseStore = create<ExpenseStore>((set, get) => ({
@@ -392,11 +395,12 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
       // Reinsertar categorías predeterminadas después de borrar todo
       await databaseService.reinitializeDefaultData();
 
-      // Limpiar y recargar el estado del store
+      // Limpiar y recargar el estado del store, incluyendo resetear premium
       set({
         expenses: [],
         loading: false,
         error: null,
+        isPremium: false,
       });
 
       // Recargar categorías predeterminadas
@@ -434,6 +438,24 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
   },
   
   setLoading: (loading) => set({ loading }),
+
+  // Premium
+  upgradeToPremium: async () => {
+    try {
+      set({ loading: true, error: null });
+
+      // Guardar el estado premium en la base de datos
+      await databaseService.setSetting('isPremium', 'true');
+
+      // Actualizar el estado local
+      set({ isPremium: true, loading: false });
+
+      console.log('✅ Usuario actualizado a Premium exitosamente');
+    } catch (error) {
+      console.error('Error upgrading to premium:', error);
+      set({ error: 'Error al actualizar a Premium', loading: false });
+    }
+  },
 }));
 
 // Función global temporal para importar datos de prueba desde la consola
