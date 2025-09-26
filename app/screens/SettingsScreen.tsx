@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../contexts/ThemeContext";
 import { useSettings } from "../hooks/useSettings";
 import { useSettingsActions } from "../hooks/useSettingsActions";
+import { useExpenseStore } from "../store/expenseStore";
 import {
   SettingSection,
   AccountCard,
@@ -22,7 +23,8 @@ interface SettingsScreenProps {
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { colors, isDark, toggleTheme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { preferences, isPremium, updateSetting } = useSettings(isDark);
+  const { preferences, updateSetting } = useSettings(isDark);
+  const { isPremium } = useExpenseStore();
   const actions = useSettingsActions(isPremium);
 
   const personalizationSettings = createPersonalizationSettings(
