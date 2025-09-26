@@ -150,7 +150,10 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             const success = await importTestData();
             if (success) {
               await loadDashboardData();
-              Alert.alert("¡Éxito!", "Datos de prueba importados correctamente");
+              Alert.alert(
+                "¡Éxito!",
+                "Datos de prueba importados correctamente"
+              );
             } else {
               Alert.alert("Error", "No se pudieron importar los datos");
             }
@@ -212,7 +215,11 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             style={styles.testDataButton}
             onPress={handleImportTestData}
           >
-            <Ionicons name="download-outline" size={16} color={colors.primary} />
+            <Ionicons
+              name="download-outline"
+              size={16}
+              color={colors.primary}
+            />
             <Text style={styles.testDataButtonText}>Test Data</Text>
           </TouchableOpacity>
         </View>
