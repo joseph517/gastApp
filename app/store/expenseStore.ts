@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Expense, Category, ExpenseFilters, CategoryTotal, PeriodStats, Period } from '../types';
 import { databaseService } from '../database/database';
 import { FREE_TIER_LIMITS } from '../constants/categories';
+import { getCategoryColor } from '../utils/categoryUtils';
 
 interface ExpenseStore {
   // Estado
@@ -191,16 +192,14 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
   getTotalsByCategory: async (startDate, endDate) => {
     try {
       const totals = await databaseService.getTotalByCategory(startDate, endDate);
-      const { categories } = get();
 
       const totalAmount = totals.reduce((sum, item) => sum + item.total, 0);
 
       return totals.map(item => {
-        const category = categories.find(c => c.name === item.category);
         return {
           category: item.category,
           total: item.total,
-          color: category?.color || '#95A5A6',
+          color: getCategoryColor(item.category),
           percentage: totalAmount > 0 ? (item.total / totalAmount) * 100 : 0,
           count: item.count
         };
@@ -456,6 +455,9 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
 
       // Actualizar el estado local
       set({ isPremium: true, loading: false });
+
+      // Forzar inserción de categorías premium y recargar
+      await databaseService.forceInsertPremiumCategories();
 
       // Recargar categorías para mostrar las premium
       await get().loadCategories();
