@@ -11,9 +11,9 @@ interface TimelineChartProps {
   height?: number;
 }
 
-const TimelineChart: React.FC<TimelineChartProps> = ({
+const TimelineChart: React.FC<TimelineChartProps> = React.memo(({
   data,
-  title = "Evolución de Gastos (30 días)",
+  title = "Evolución de Gastos (15 días)",
   height = 200
 }) => {
   const { colors } = useTheme();
@@ -107,6 +107,7 @@ const TimelineChart: React.FC<TimelineChartProps> = ({
           if (num >= 1000) return `${(num / 1000).toFixed(0)}K`;
           return num.toFixed(0);
         }}
+        fromZero={true}
       />
 
       <View style={styles.statsContainer}>
@@ -139,7 +140,7 @@ const TimelineChart: React.FC<TimelineChartProps> = ({
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

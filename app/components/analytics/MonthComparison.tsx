@@ -10,7 +10,7 @@ interface MonthComparisonProps {
   title?: string;
 }
 
-const MonthComparison: React.FC<MonthComparisonProps> = ({
+const MonthComparison: React.FC<MonthComparisonProps> = React.memo(({
   comparison,
   title = "Comparación Mensual"
 }) => {
@@ -138,7 +138,7 @@ const MonthComparison: React.FC<MonthComparisonProps> = ({
       </View>
     </View>
   );
-};
+});
 
 const getInsightText = (comparison: PeriodComparison): string => {
   const absChange = Math.abs(comparison.percentageChange);

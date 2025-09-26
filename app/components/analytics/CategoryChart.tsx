@@ -13,7 +13,7 @@ interface CategoryChartProps {
   showPercentages?: boolean;
 }
 
-const CategoryChart: React.FC<CategoryChartProps> = ({
+const CategoryChart: React.FC<CategoryChartProps> = React.memo(({
   data,
   title = "Distribución por Categorías",
   showLegend = true,
@@ -54,7 +54,7 @@ const CategoryChart: React.FC<CategoryChartProps> = ({
 
   // Preparar datos para el gráfico
   const chartData = data.map((item, index) => ({
-    name: item.categoryName,
+    name: item.category,
     population: item.total,
     color: categoryColors[index % categoryColors.length],
     legendFontColor: colors.textSecondary,
@@ -104,7 +104,7 @@ const CategoryChart: React.FC<CategoryChartProps> = ({
       {showLegend && (
         <View style={styles.legendContainer}>
           {data.map((item, index) => (
-            <View key={item.categoryName} style={styles.legendItem}>
+            <View key={item.category} style={styles.legendItem}>
               <View style={styles.legendRow}>
                 <View
                   style={[
@@ -113,7 +113,7 @@ const CategoryChart: React.FC<CategoryChartProps> = ({
                   ]}
                 />
                 <Text style={[styles.categoryName, { color: colors.textPrimary }]}>
-                  {item.categoryName}
+                  {item.category}
                 </Text>
                 <View style={styles.amountContainer}>
                   <Text style={[styles.amount, { color: colors.textPrimary }]}>
@@ -151,7 +151,7 @@ const CategoryChart: React.FC<CategoryChartProps> = ({
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

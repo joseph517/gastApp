@@ -10,7 +10,7 @@ interface MonthlyPredictionProps {
   title?: string;
 }
 
-const MonthlyPrediction: React.FC<MonthlyPredictionProps> = ({
+const MonthlyPrediction: React.FC<MonthlyPredictionProps> = React.memo(({
   prediction,
   title = "Predicción Mensual"
 }) => {
@@ -175,7 +175,7 @@ const MonthlyPrediction: React.FC<MonthlyPredictionProps> = ({
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
