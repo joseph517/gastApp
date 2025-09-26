@@ -9,12 +9,19 @@ import {
   FONT_SIZES,
 } from "../constants/colors";
 import { Expense } from "../types";
+import { DEFAULT_CATEGORIES, PREMIUM_CATEGORIES } from "../constants/categories";
 
 interface ExpenseCardProps {
   expense: Expense;
   onPress?: () => void;
   onDelete?: () => void;
 }
+
+const getCategoryIcon = (categoryName: string): string => {
+  const allCategories = [...DEFAULT_CATEGORIES, ...PREMIUM_CATEGORIES];
+  const category = allCategories.find(cat => cat.name === categoryName);
+  return category?.icon || "📝";
+};
 
 const ExpenseCard: React.FC<ExpenseCardProps> = ({
   expense,
@@ -44,7 +51,7 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({
     <TouchableOpacity style={styles.card} onPress={onPress}>
       <View style={styles.leftSection}>
         <View style={styles.categoryIcon}>
-          <Text style={styles.categoryText}>{expense.category}</Text>
+          <Text style={styles.categoryIconText}>{getCategoryIcon(expense.category)}</Text>
         </View>
         <View style={styles.expenseInfo}>
           <Text style={styles.description} numberOfLines={1}>
@@ -70,63 +77,63 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
-  card: {
-    backgroundColor: colors.cardBackground,
-    marginHorizontal: SPACING.md,
-    marginVertical: SPACING.xs,
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    ...SHADOWS.small,
-  },
-  leftSection: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  categoryIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: BORDER_RADIUS.full,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: SPACING.sm,
-  },
-  categoryText: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: "600",
-    color: colors.primary,
-  },
-  expenseInfo: {
-    flex: 1,
-  },
-  description: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: "600",
-    color: colors.textPrimary,
-    marginBottom: 2,
-  },
-  date: {
-    fontSize: FONT_SIZES.sm,
-    color: colors.textSecondary,
-  },
-  rightSection: {
-    alignItems: "flex-end",
-    justifyContent: "center",
-  },
-  amount: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: "700",
-    color: colors.error,
-    marginBottom: 4,
-  },
-  deleteButton: {
-    padding: 4,
-  },
-});
+const createStyles = (colors: any) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.cardBackground,
+      marginHorizontal: SPACING.md,
+      marginVertical: SPACING.xs,
+      padding: SPACING.md,
+      borderRadius: BORDER_RADIUS.lg,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      ...SHADOWS.small,
+    },
+    leftSection: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    categoryIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: BORDER_RADIUS.full,
+      backgroundColor: colors.surface,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: SPACING.sm,
+    },
+    categoryIconText: {
+      fontSize: 20,
+      textAlign: "center",
+    },
+    expenseInfo: {
+      flex: 1,
+    },
+    description: {
+      fontSize: FONT_SIZES.md,
+      fontWeight: "600",
+      color: colors.textPrimary,
+      marginBottom: 2,
+    },
+    date: {
+      fontSize: FONT_SIZES.sm,
+      color: colors.textSecondary,
+    },
+    rightSection: {
+      alignItems: "flex-end",
+      justifyContent: "center",
+    },
+    amount: {
+      fontSize: FONT_SIZES.lg,
+      fontWeight: "700",
+      color: colors.error,
+      marginBottom: 4,
+    },
+    deleteButton: {
+      padding: 4,
+    },
+  });
 
 export default ExpenseCard;
