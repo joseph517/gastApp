@@ -172,7 +172,14 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
 
   loadCategories: async () => {
     try {
-      const categories = await databaseService.getCategories();
+      const allCategories = await databaseService.getCategories();
+      const { isPremium } = get();
+
+      // Filtrar categorías según el estado premium
+      const categories = isPremium
+        ? allCategories
+        : allCategories.filter(category => !category.isPremium);
+
       set({ categories });
     } catch (error) {
       console.error('Error loading categories:', error);
@@ -449,6 +456,9 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
 
       // Actualizar el estado local
       set({ isPremium: true, loading: false });
+
+      // Recargar categorías para mostrar las premium
+      await get().loadCategories();
 
       console.log('✅ Usuario actualizado a Premium exitosamente');
     } catch (error) {

@@ -6,7 +6,7 @@ import {
   CREATE_INDEXES,
   DEFAULT_SETTINGS
 } from './schema';
-import { DEFAULT_CATEGORIES } from '../constants/categories';
+import { DEFAULT_CATEGORIES, PREMIUM_CATEGORIES } from '../constants/categories';
 import { Expense, Category, Setting } from '../types';
 
 // Simple mutex implementation
@@ -165,6 +165,14 @@ class DatabaseService {
         [category.name, category.icon, category.color, category.isPremium ? 1 : 0]
       );
     }
+
+    // Insert premium categories
+    for (const category of PREMIUM_CATEGORIES) {
+      await this.db.runAsync(
+        'INSERT OR IGNORE INTO categories (name, icon, color, is_premium) VALUES (?, ?, ?, ?)',
+        [category.name, category.icon, category.color, category.isPremium ? 1 : 0]
+      );
+    }
   }
 
   async reinitializeDefaultData(): Promise<void> {
@@ -179,6 +187,14 @@ class DatabaseService {
 
       // Insert default categories
       for (const category of DEFAULT_CATEGORIES) {
+        await db.runAsync(
+          'INSERT OR IGNORE INTO categories (name, icon, color, is_premium) VALUES (?, ?, ?, ?)',
+          [category.name, category.icon, category.color, category.isPremium ? 1 : 0]
+        );
+      }
+
+      // Insert premium categories
+      for (const category of PREMIUM_CATEGORIES) {
         await db.runAsync(
           'INSERT OR IGNORE INTO categories (name, icon, color, is_premium) VALUES (?, ?, ?, ?)',
           [category.name, category.icon, category.color, category.isPremium ? 1 : 0]
