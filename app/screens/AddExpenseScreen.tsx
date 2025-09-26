@@ -36,6 +36,7 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     getExpenseCountToday,
     loadCategories,
     clearError,
+    isPremium,
   } = useExpenseStore();
 
   const [formData, setFormData] = useState<ExpenseFormData>({
@@ -98,8 +99,7 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
     // Calcular 3 meses atrás correctamente
     const threeMonthsAgo = new Date(today);
-    threeMonthsAgo.setDate(today.getDate() - 90); // 90 días = aproximadamente 3 meses
-
+    threeMonthsAgo.setDate(today.getDate() - 90);
 
     if (selectedDate < threeMonthsAgo) {
       Alert.alert(
@@ -220,12 +220,14 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         </View>
 
         <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-          {/* Limite Info */}
-          <View style={styles.limitInfo}>
-            <Text style={styles.limitText}>
-              Gastos hoy: {todayExpenseCount}/5 (Gratuito)
-            </Text>
-          </View>
+          {/* Limite Info - Solo mostrar para usuarios gratuitos */}
+          {!isPremium && (
+            <View style={styles.limitInfo}>
+              <Text style={styles.limitText}>
+                Gastos hoy: {todayExpenseCount}/5 (Gratuito)
+              </Text>
+            </View>
+          )}
 
           {/* Amount Input */}
           <View style={styles.amountSection}>
@@ -341,155 +343,156 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   );
 };
 
-const createStyles = (colors: any, insets: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    paddingTop: insets.top,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    backgroundColor: colors.cardBackground,
-    ...SHADOWS.small,
-  },
-  backButton: {
-    padding: SPACING.xs,
-  },
-  title: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: "700",
-    color: colors.textPrimary,
-  },
-  placeholder: {
-    width: 40,
-  },
-  form: {
-    flex: 1,
-  },
-  limitInfo: {
-    backgroundColor: colors.primary + "10",
-    margin: SPACING.md,
-    padding: SPACING.sm,
-    borderRadius: BORDER_RADIUS.md,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.primary,
-  },
-  limitText: {
-    fontSize: FONT_SIZES.sm,
-    color: colors.primary,
-    fontWeight: "600",
-  },
-  amountSection: {
-    backgroundColor: colors.cardBackground,
-    margin: SPACING.md,
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    alignItems: "center",
-    ...SHADOWS.small,
-  },
-  sectionTitle: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: "600",
-    color: colors.textPrimary,
-    marginBottom: SPACING.sm,
-    alignSelf: "flex-start",
-    width: "100%",
-  },
-  amountInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginVertical: SPACING.md,
-  },
-  currencySymbol: {
-    fontSize: FONT_SIZES.xxxl,
-    fontWeight: "700",
-    color: colors.primary,
-    marginRight: SPACING.xs,
-  },
-  amountInput: {
-    fontSize: FONT_SIZES.xxxl,
-    fontWeight: "700",
-    color: colors.textPrimary,
-    minWidth: 100,
-    textAlign: "center",
-    borderBottomWidth: 2,
-    borderBottomColor: colors.primary,
-    paddingVertical: SPACING.xs,
-  },
-  formattedAmount: {
-    fontSize: FONT_SIZES.md,
-    color: colors.textSecondary,
-    marginTop: SPACING.xs,
-  },
-  section: {
-    backgroundColor: colors.cardBackground,
-    marginHorizontal: SPACING.md,
-    marginVertical: SPACING.xs,
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    ...SHADOWS.small,
-  },
-  textInput: {
-    fontSize: FONT_SIZES.md,
-    color: colors.textPrimary,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray200,
-    paddingVertical: SPACING.sm,
-  },
-  dateButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray200,
-  },
-  dateText: {
-    flex: 1,
-    fontSize: FONT_SIZES.md,
-    color: colors.textPrimary,
-    marginLeft: SPACING.sm,
-  },
-  errorContainer: {
-    backgroundColor: colors.error + "10",
-    marginHorizontal: SPACING.md,
-    padding: SPACING.sm,
-    borderRadius: BORDER_RADIUS.md,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  errorText: {
-    flex: 1,
-    fontSize: FONT_SIZES.sm,
-    color: colors.error,
-  },
-  buttonContainer: {
-    padding: SPACING.md,
-    backgroundColor: colors.cardBackground,
-  },
-  submitButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
-    alignItems: "center",
-    ...SHADOWS.medium,
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: "700",
-    color: colors.background,
-  },
-});
+const createStyles = (colors: any, insets: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      paddingTop: insets.top,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.md,
+      backgroundColor: colors.cardBackground,
+      ...SHADOWS.small,
+    },
+    backButton: {
+      padding: SPACING.xs,
+    },
+    title: {
+      fontSize: FONT_SIZES.xl,
+      fontWeight: "700",
+      color: colors.textPrimary,
+    },
+    placeholder: {
+      width: 40,
+    },
+    form: {
+      flex: 1,
+    },
+    limitInfo: {
+      backgroundColor: colors.primary + "10",
+      margin: SPACING.md,
+      padding: SPACING.sm,
+      borderRadius: BORDER_RADIUS.md,
+      borderLeftWidth: 4,
+      borderLeftColor: colors.primary,
+    },
+    limitText: {
+      fontSize: FONT_SIZES.sm,
+      color: colors.primary,
+      fontWeight: "600",
+    },
+    amountSection: {
+      backgroundColor: colors.cardBackground,
+      margin: SPACING.md,
+      padding: SPACING.lg,
+      borderRadius: BORDER_RADIUS.lg,
+      alignItems: "center",
+      ...SHADOWS.small,
+    },
+    sectionTitle: {
+      fontSize: FONT_SIZES.lg,
+      fontWeight: "600",
+      color: colors.textPrimary,
+      marginBottom: SPACING.sm,
+      alignSelf: "flex-start",
+      width: "100%",
+    },
+    amountInputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      marginVertical: SPACING.md,
+    },
+    currencySymbol: {
+      fontSize: FONT_SIZES.xxxl,
+      fontWeight: "700",
+      color: colors.primary,
+      marginRight: SPACING.xs,
+    },
+    amountInput: {
+      fontSize: FONT_SIZES.xxxl,
+      fontWeight: "700",
+      color: colors.textPrimary,
+      minWidth: 100,
+      textAlign: "center",
+      borderBottomWidth: 2,
+      borderBottomColor: colors.primary,
+      paddingVertical: SPACING.xs,
+    },
+    formattedAmount: {
+      fontSize: FONT_SIZES.md,
+      color: colors.textSecondary,
+      marginTop: SPACING.xs,
+    },
+    section: {
+      backgroundColor: colors.cardBackground,
+      marginHorizontal: SPACING.md,
+      marginVertical: SPACING.xs,
+      padding: SPACING.lg,
+      borderRadius: BORDER_RADIUS.lg,
+      ...SHADOWS.small,
+    },
+    textInput: {
+      fontSize: FONT_SIZES.md,
+      color: colors.textPrimary,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.gray200,
+      paddingVertical: SPACING.sm,
+    },
+    dateButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: SPACING.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.gray200,
+    },
+    dateText: {
+      flex: 1,
+      fontSize: FONT_SIZES.md,
+      color: colors.textPrimary,
+      marginLeft: SPACING.sm,
+    },
+    errorContainer: {
+      backgroundColor: colors.error + "10",
+      marginHorizontal: SPACING.md,
+      padding: SPACING.sm,
+      borderRadius: BORDER_RADIUS.md,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    errorText: {
+      flex: 1,
+      fontSize: FONT_SIZES.sm,
+      color: colors.error,
+    },
+    buttonContainer: {
+      padding: SPACING.md,
+      backgroundColor: colors.cardBackground,
+    },
+    submitButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: SPACING.md,
+      borderRadius: BORDER_RADIUS.lg,
+      alignItems: "center",
+      ...SHADOWS.medium,
+    },
+    submitButtonDisabled: {
+      opacity: 0.6,
+    },
+    submitButtonText: {
+      fontSize: FONT_SIZES.lg,
+      fontWeight: "700",
+      color: colors.background,
+    },
+  });
 
 export default AddExpenseScreen;
