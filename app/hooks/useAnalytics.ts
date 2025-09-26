@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useExpenseStore } from "../store/expenseStore";
-import { Expense, Period } from "../types";
+import { Expense, Period, CategoryTotal } from "../types";
+import { getPeriodDateRange } from "../utils/dateUtils";
 
 export interface TimelineData {
   date: string;
@@ -40,176 +41,192 @@ export interface MonthlyPrediction {
 }
 
 export const useAnalytics = () => {
-  const { expenses, getExpenses } = useExpenseStore();
+  const { expenses, getExpenses, getTotalsByCategory } = useExpenseStore();
   const [timelineData, setTimelineData] = useState<TimelineData[]>([]);
-  const [monthComparison, setMonthComparison] = useState<PeriodComparison | null>(null);
-  const [monthlyPrediction, setMonthlyPrediction] = useState<MonthlyPrediction | null>(null);
+  const [monthComparison, setMonthComparison] =
+    useState<PeriodComparison | null>(null);
+  const [monthlyPrediction, setMonthlyPrediction] =
+    useState<MonthlyPrediction | null>(null);
 
-  useEffect(() => {
-    if (expenses.length > 0) {
-      calculateTimelineData();
-      calculateMonthComparison();
-      calculateMonthlyPrediction();
-    }
-  }, [expenses]);
+  // Memoizar cálculos pesados - Cambiado a 15 días
+  const memoizedTimelineData = useMemo(() => {
+    if (expenses.length === 0) return [];
 
-  const calculateTimelineData = () => {
     const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+    const fifteenDaysAgo = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
 
-    // Filtrar gastos de los últimos 30 días
-    const recentExpenses = expenses.filter(expense => {
+    const recentExpenses = expenses.filter((expense) => {
       const expenseDate = new Date(expense.date);
-      return expenseDate >= thirtyDaysAgo && expenseDate <= now;
+      return expenseDate >= fifteenDaysAgo && expenseDate <= now;
     });
 
-    // Agrupar por día
     const dailyTotals = new Map<string, number>();
-
-    recentExpenses.forEach(expense => {
-      const dateKey = expense.date.split('T')[0]; // YYYY-MM-DD
+    recentExpenses.forEach((expense) => {
+      const dateKey = expense.date.split("T")[0];
       const current = dailyTotals.get(dateKey) || 0;
       dailyTotals.set(dateKey, current + expense.amount);
     });
 
-    // Crear array para los últimos 30 días (incluyendo días sin gastos)
     const timeline: TimelineData[] = [];
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(now.getTime() - (i * 24 * 60 * 60 * 1000));
-      const dateKey = date.toISOString().split('T')[0];
+    for (let i = 14; i >= 0; i--) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dateKey = date.toISOString().split("T")[0];
       const amount = dailyTotals.get(dateKey) || 0;
 
       timeline.push({
         date: dateKey,
         amount,
-        label: date.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' }),
-        id: dateKey
+        label: date.toLocaleDateString("es-CO", {
+          day: "2-digit",
+          month: "2-digit",
+        }),
+        id: dateKey,
       });
     }
 
-    setTimelineData(timeline);
-  };
+    return timeline;
+  }, [expenses]);
 
-  const calculateMonthComparison = () => {
+  useEffect(() => {
+    setTimelineData(memoizedTimelineData);
+  }, [memoizedTimelineData]);
+
+  // Memoizar comparación mensual
+  const memoizedMonthComparison = useMemo(() => {
+    if (expenses.length === 0) return null;
+
     const now = new Date();
-
-    // Mes actual
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-    // Mes anterior
-    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const previousMonthStart = new Date(
+      now.getFullYear(),
+      now.getMonth() - 1,
+      1
+    );
     const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
-    const currentExpenses = expenses.filter(expense => {
+    const currentExpenses = expenses.filter((expense) => {
       const expenseDate = new Date(expense.date);
       return expenseDate >= currentMonthStart && expenseDate <= currentMonthEnd;
     });
 
-    const previousExpenses = expenses.filter(expense => {
+    const previousExpenses = expenses.filter((expense) => {
       const expenseDate = new Date(expense.date);
-      return expenseDate >= previousMonthStart && expenseDate <= previousMonthEnd;
+      return (
+        expenseDate >= previousMonthStart && expenseDate <= previousMonthEnd
+      );
     });
 
-    const currentTotal = currentExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-    const previousTotal = previousExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-
+    const currentTotal = currentExpenses.reduce(
+      (sum, expense) => sum + expense.amount,
+      0
+    );
+    const previousTotal = previousExpenses.reduce(
+      (sum, expense) => sum + expense.amount,
+      0
+    );
     const difference = currentTotal - previousTotal;
-    const percentageChange = previousTotal > 0 ? (difference / previousTotal) * 100 : 0;
+    const percentageChange =
+      previousTotal > 0 ? (difference / previousTotal) * 100 : 0;
 
-    setMonthComparison({
+    return {
       current: {
         total: currentTotal,
-        period: currentMonthStart.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }),
-        expenses: currentExpenses
+        period: currentMonthStart.toLocaleDateString("es-CO", {
+          month: "long",
+          year: "numeric",
+        }),
+        expenses: currentExpenses,
       },
       previous: {
         total: previousTotal,
-        period: previousMonthStart.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }),
-        expenses: previousExpenses
+        period: previousMonthStart.toLocaleDateString("es-CO", {
+          month: "long",
+          year: "numeric",
+        }),
+        expenses: previousExpenses,
       },
       percentageChange,
-      difference
-    });
-  };
+      difference,
+    };
+  }, [expenses]);
 
-  const calculateMonthlyPrediction = () => {
+  useEffect(() => {
+    setMonthComparison(memoizedMonthComparison);
+  }, [memoizedMonthComparison]);
+
+  // Memoizar predicción mensual
+  const memoizedMonthlyPrediction = useMemo(() => {
+    if (expenses.length === 0) return null;
+
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    // Gastos del mes actual
-    const currentMonthExpenses = expenses.filter(expense => {
+    const currentMonthExpenses = expenses.filter((expense) => {
       const expenseDate = new Date(expense.date);
       return expenseDate >= monthStart && expenseDate <= now;
     });
 
-    const currentSpent = currentMonthExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-    const daysElapsed = Math.ceil((now.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24));
-    const totalDays = Math.ceil((monthEnd.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const currentSpent = currentMonthExpenses.reduce(
+      (sum, expense) => sum + expense.amount,
+      0
+    );
+    const daysElapsed = Math.ceil(
+      (now.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const totalDays =
+      Math.ceil(
+        (monthEnd.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)
+      ) + 1;
     const dailyAverage = daysElapsed > 0 ? currentSpent / daysElapsed : 0;
     const projectedTotal = dailyAverage * totalDays;
     const remainingBudget = projectedTotal - currentSpent;
 
-    setMonthlyPrediction({
+    return {
       currentSpent,
       daysElapsed,
       totalDays,
       dailyAverage,
       projectedTotal,
-      remainingBudget
-    });
-  };
+      remainingBudget,
+    };
+  }, [expenses]);
 
-  const getTopCategories = (period: Period = 'month') => {
-    const now = new Date();
-    let startDate: Date;
+  useEffect(() => {
+    setMonthlyPrediction(memoizedMonthlyPrediction);
+  }, [memoizedMonthlyPrediction]);
 
-    switch (period) {
-      case 'week':
-        startDate = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
-        break;
-      case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        break;
-      case 'year':
-        startDate = new Date(now.getFullYear(), 0, 1);
-        break;
-      default:
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    }
+  // Optimizar funciones con useCallback
+  const getTopCategories = useCallback(
+    async (period: Period = "month"): Promise<CategoryTotal[]> => {
+      const { startDate, endDate } = getPeriodDateRange(period);
 
-    const periodExpenses = expenses.filter(expense => {
-      const expenseDate = new Date(expense.date);
-      return expenseDate >= startDate && expenseDate <= now;
-    });
+      try {
+        const totals = await getTotalsByCategory(
+          startDate.toISOString().split("T")[0],
+          endDate.toISOString().split("T")[0]
+        );
 
-    const categoryTotals = new Map<string, number>();
-    periodExpenses.forEach(expense => {
-      const current = categoryTotals.get(expense.categoryName) || 0;
-      categoryTotals.set(expense.categoryName, current + expense.amount);
-    });
+        return totals.sort((a, b) => b.total - a.total).slice(0, 5);
+      } catch (error) {
+        console.error("Error getting top categories:", error);
+        return [];
+      }
+    },
+    [getTotalsByCategory]
+  );
 
-    return Array.from(categoryTotals.entries())
-      .map(([name, amount]) => ({
-        categoryName: name,
-        total: amount,
-        id: name
-      }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 5);
-  };
-
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = useCallback((amount: number) => {
     return new Intl.NumberFormat("es-CO", {
       style: "currency",
       currency: "COP",
     }).format(amount);
-  };
+  }, []);
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     await getExpenses();
-  };
+  }, [getExpenses]);
 
   return {
     // Datos calculados
@@ -223,6 +240,6 @@ export const useAnalytics = () => {
     refreshData,
 
     // Estado
-    loading: expenses.length === 0
+    loading: expenses.length === 0,
   };
 };
