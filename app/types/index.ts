@@ -54,10 +54,9 @@ export interface ExpenseFormData {
 
 export interface PremiumFeature {
   id: string;
-  name: string;
+  title: string;
   description: string;
   icon: string;
-  isEnabled: boolean;
 }
 
 export interface UserPreferences {
