@@ -64,6 +64,8 @@ export const PREMIUM_CATEGORIES: CategoryData[] = [
   { name: "Mascotas", icon: "🐕", color: "#F39C12", isPremium: true },
   { name: "Regalos", icon: "🎁", color: "#E91E63", isPremium: true },
   { name: "Hogar", icon: "🏠", color: "#795548", isPremium: true },
+  { name: "Ahorro", icon: "💰", color: "#2ECC71", isPremium: true },
+  { name: "Viajes", icon: "🌴", color: "#3498DB", isPremium: true },
 ];
 
 export const FREE_TIER_LIMITS = {

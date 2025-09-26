@@ -175,6 +175,21 @@ class DatabaseService {
     }
   }
 
+  async forceInsertPremiumCategories(): Promise<void> {
+    return this.executeWithConnection(async (db) => {
+      // Delete existing premium categories first
+      await db.runAsync('DELETE FROM categories WHERE is_premium = 1');
+
+      // Insert premium categories
+      for (const category of PREMIUM_CATEGORIES) {
+        await db.runAsync(
+          'INSERT INTO categories (name, icon, color, is_premium) VALUES (?, ?, ?, ?)',
+          [category.name, category.icon, category.color, category.isPremium ? 1 : 0]
+        );
+      }
+    }, 'forceInsertPremiumCategories');
+  }
+
   async reinitializeDefaultData(): Promise<void> {
     return this.executeWithConnection(async (db) => {
       // Insert default settings
