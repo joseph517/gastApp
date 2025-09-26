@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -13,18 +13,23 @@ import { useStatistics } from "../hooks/useStatistics";
 import StatsCard from "../components/statistics/StatsCard";
 import ChartCard from "../components/statistics/ChartCard";
 import PremiumSection from "../components/statistics/PremiumSection";
+import PremiumUpgradeModal from "../components/PremiumUpgradeModal";
 import { PREMIUM_FEATURES } from "../constants/premiumFeatures";
 import { StatisticsScreenProps } from "../types/statistics";
 
 const StatisticsScreen: React.FC<StatisticsScreenProps> = ({ navigation }) => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { isPremium } = useExpenseStore();
+  const { isPremium, upgradeToPremium } = useExpenseStore();
   const { monthlyTotals, stats, formatCurrency } = useStatistics();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const handleUpgradePress = () => {
-    // Navigate to premium upgrade screen
-    console.log('Navigate to premium upgrade');
+    setShowUpgradeModal(true);
+  };
+
+  const handleUpgradeSuccess = async () => {
+    await upgradeToPremium();
   };
 
   const styles = createStyles(colors, insets);
@@ -55,6 +60,12 @@ const StatisticsScreen: React.FC<StatisticsScreenProps> = ({ navigation }) => {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      <PremiumUpgradeModal
+        visible={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onUpgradeSuccess={handleUpgradeSuccess}
+      />
     </View>
   );
 };
