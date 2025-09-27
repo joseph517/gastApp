@@ -43,21 +43,22 @@ export interface MonthlyPrediction {
 export const useAnalytics = () => {
   const { expenses, getExpenses, getTotalsByCategory } = useExpenseStore();
   const [timelineData, setTimelineData] = useState<TimelineData[]>([]);
+  const [timelineRange, setTimelineRange] = useState<7 | 15 | 30>(15);
   const [monthComparison, setMonthComparison] =
     useState<PeriodComparison | null>(null);
   const [monthlyPrediction, setMonthlyPrediction] =
     useState<MonthlyPrediction | null>(null);
 
-  // Memoizar cálculos pesados - Cambiado a 15 días
+  // Memoizar cálculos pesados - Rango dinámico
   const memoizedTimelineData = useMemo(() => {
     if (expenses.length === 0) return [];
 
     const now = new Date();
-    const fifteenDaysAgo = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
+    const daysAgo = new Date(now.getTime() - timelineRange * 24 * 60 * 60 * 1000);
 
     const recentExpenses = expenses.filter((expense) => {
       const expenseDate = new Date(expense.date);
-      return expenseDate >= fifteenDaysAgo && expenseDate <= now;
+      return expenseDate >= daysAgo && expenseDate <= now;
     });
 
     const dailyTotals = new Map<string, number>();
@@ -68,7 +69,7 @@ export const useAnalytics = () => {
     });
 
     const timeline: TimelineData[] = [];
-    for (let i = 14; i >= 0; i--) {
+    for (let i = timelineRange - 1; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dateKey = date.toISOString().split("T")[0];
       const amount = dailyTotals.get(dateKey) || 0;
@@ -85,7 +86,7 @@ export const useAnalytics = () => {
     }
 
     return timeline;
-  }, [expenses]);
+  }, [expenses, timelineRange]);
 
   useEffect(() => {
     setTimelineData(memoizedTimelineData);
@@ -231,6 +232,7 @@ export const useAnalytics = () => {
   return {
     // Datos calculados
     timelineData,
+    timelineRange,
     monthComparison,
     monthlyPrediction,
 
@@ -238,6 +240,7 @@ export const useAnalytics = () => {
     getTopCategories,
     formatCurrency,
     refreshData,
+    setTimelineRange,
 
     // Estado
     loading: expenses.length === 0,
