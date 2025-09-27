@@ -27,10 +27,25 @@ export const CREATE_SETTINGS_TABLE = `
   );
 `;
 
+export const CREATE_BUDGETS_TABLE = `
+  CREATE TABLE IF NOT EXISTS budgets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    amount REAL NOT NULL,
+    period TEXT NOT NULL DEFAULT 'monthly',
+    start_date TEXT NOT NULL,
+    end_date TEXT,
+    is_active INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+`;
+
 export const CREATE_INDEXES = [
   "CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);",
   "CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category);",
   "CREATE INDEX IF NOT EXISTS idx_expenses_created_at ON expenses(created_at);",
+  "CREATE INDEX IF NOT EXISTS idx_budgets_date ON budgets(start_date);",
+  "CREATE INDEX IF NOT EXISTS idx_budgets_active ON budgets(is_active);",
 ];
 
 export const DEFAULT_SETTINGS = [

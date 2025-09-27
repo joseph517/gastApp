@@ -71,3 +71,27 @@ export interface NavigationProps {
   navigation: any;
   route?: any;
 }
+
+export interface Budget {
+  id?: number;
+  amount: number;
+  period: 'monthly';
+  startDate: string;
+  endDate?: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BudgetStatus {
+  budget: Budget;
+  spent: number;
+  remaining: number;
+  percentage: number;
+  status: 'safe' | 'warning' | 'exceeded';
+  daysRemaining: number;
+  totalDays: number;
+  averageDailySpending: number;
+  recommendedDailyLimit: number;
+  projectedTotal: number;
+}
