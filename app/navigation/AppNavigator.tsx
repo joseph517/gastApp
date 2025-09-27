@@ -11,6 +11,7 @@ import DashboardScreen from "../screens/DashboardScreen";
 import AddExpenseScreen from "../screens/AddExpenseScreen";
 import StatisticsScreen from "../screens/StatisticsScreen";
 import AnalyticsScreen from "../screens/AnalyticsScreen";
+import BudgetScreen from "../screens/BudgetScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 
 const Tab = createBottomTabNavigator();
@@ -36,6 +37,7 @@ const StatisticsStack = () => (
   >
     <Stack.Screen name="Statistics" component={StatisticsScreen} />
     <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+    <Stack.Screen name="Budget" component={BudgetScreen} />
   </Stack.Navigator>
 );
 
