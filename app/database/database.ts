@@ -3,6 +3,7 @@ import {
   CREATE_EXPENSES_TABLE,
   CREATE_CATEGORIES_TABLE,
   CREATE_SETTINGS_TABLE,
+  CREATE_BUDGETS_TABLE,
   CREATE_INDEXES,
   DEFAULT_SETTINGS,
 } from "./schema";
@@ -10,7 +11,7 @@ import {
   DEFAULT_CATEGORIES,
   PREMIUM_CATEGORIES,
 } from "../constants/categories";
-import { Expense, Category, Setting } from "../types";
+import { Expense, Category, Setting, Budget } from "../types";
 
 // Simple mutex implementation
 class Mutex {
@@ -142,6 +143,7 @@ class DatabaseService {
     await this.db.execAsync(CREATE_EXPENSES_TABLE);
     await this.db.execAsync(CREATE_CATEGORIES_TABLE);
     await this.db.execAsync(CREATE_SETTINGS_TABLE);
+    await this.db.execAsync(CREATE_BUDGETS_TABLE);
   }
 
   private async createIndexes(): Promise<void> {
@@ -422,6 +424,9 @@ class DatabaseService {
       // Eliminar todos los gastos
       await db.runAsync("DELETE FROM expenses");
 
+      // Eliminar todos los presupuestos
+      await db.runAsync("DELETE FROM budgets");
+
       // Eliminar todas las categorías personalizadas
       await db.runAsync("DELETE FROM categories");
 
@@ -462,6 +467,111 @@ class DatabaseService {
 
       return result || [];
     }, "getTotalByCategory");
+  }
+
+  // Budget operations
+  async createBudget(budget: Omit<Budget, "id" | "createdAt" | "updatedAt">): Promise<number> {
+    return this.executeWithConnection(async (db) => {
+      const result = await db.runAsync(
+        "INSERT INTO budgets (amount, period, start_date, end_date, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+        [budget.amount, budget.period, budget.startDate, budget.endDate || null, budget.isActive ? 1 : 0]
+      );
+      return result.lastInsertRowId;
+    }, "createBudget");
+  }
+
+  async getBudgets(): Promise<Budget[]> {
+    return this.executeWithConnection(async (db) => {
+      const result = await db.getAllAsync(
+        "SELECT * FROM budgets ORDER BY created_at DESC"
+      );
+
+      return result.map((row: any) => ({
+        id: row.id,
+        amount: row.amount,
+        period: row.period,
+        startDate: row.start_date,
+        endDate: row.end_date,
+        isActive: Boolean(row.is_active),
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }));
+    }, "getBudgets");
+  }
+
+  async getActiveBudget(): Promise<Budget | null> {
+    return this.executeWithConnection(async (db) => {
+      const result = await db.getFirstAsync(
+        "SELECT * FROM budgets WHERE is_active = 1 ORDER BY created_at DESC LIMIT 1"
+      ) as any;
+
+      if (!result) return null;
+
+      return {
+        id: result.id,
+        amount: result.amount,
+        period: result.period,
+        startDate: result.start_date,
+        endDate: result.end_date,
+        isActive: Boolean(result.is_active),
+        createdAt: result.created_at,
+        updatedAt: result.updated_at,
+      };
+    }, "getActiveBudget");
+  }
+
+  async updateBudget(id: number, data: Partial<Budget>): Promise<void> {
+    return this.executeWithConnection(async (db) => {
+      const fieldMap: Record<string, string> = {
+        startDate: "start_date",
+        endDate: "end_date",
+        isActive: "is_active",
+        updatedAt: "updated_at",
+      };
+
+      const fields = Object.keys(data)
+        .filter((key) => key !== "id" && key !== "createdAt")
+        .map((key) => {
+          const dbField = fieldMap[key] || key;
+          return `${dbField} = ?`;
+        });
+
+      const values = Object.keys(data)
+        .filter((key) => key !== "id" && key !== "createdAt")
+        .map((key) => {
+          const value = data[key as keyof Budget];
+          if (key === "isActive") {
+            return value ? 1 : 0;
+          }
+          return value;
+        });
+
+      if (fields.length === 0) return;
+
+      fields.push("updated_at = CURRENT_TIMESTAMP");
+
+      const query = `UPDATE budgets SET ${fields.join(", ")} WHERE id = ?`;
+      await db.runAsync(query, [...values.filter(v => v !== undefined), id]);
+    }, "updateBudget");
+  }
+
+  async deleteBudget(id: number): Promise<void> {
+    return this.executeWithConnection(async (db) => {
+      await db.runAsync("DELETE FROM budgets WHERE id = ?", [id]);
+    }, "deleteBudget");
+  }
+
+  async getTotalSpentInBudgetPeriod(budget: Budget): Promise<number> {
+    return this.executeWithConnection(async (db) => {
+      const endDate = budget.endDate || new Date().toISOString().split('T')[0];
+
+      const result = await db.getFirstAsync(
+        "SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE date BETWEEN ? AND ?",
+        [budget.startDate, endDate]
+      ) as { total: number };
+
+      return result.total;
+    }, "getTotalSpentInBudgetPeriod");
   }
 }
 
