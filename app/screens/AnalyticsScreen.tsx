@@ -41,10 +41,12 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
 
   const {
     timelineData,
+    timelineRange,
     monthComparison,
     monthlyPrediction,
     getTopCategories,
     refreshData,
+    setTimelineRange,
     loading: analyticsLoading,
   } = useAnalytics();
 
@@ -153,10 +155,14 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
 
         {/* Gráfico de línea temporal */}
         {loadingStates.timeline ? (
-          <LoadingCard height={250} />
+          <LoadingCard height={280} />
         ) : (
-          <Suspense fallback={<LoadingCard height={250} />}>
-            <TimelineChart data={timelineData} />
+          <Suspense fallback={<LoadingCard height={280} />}>
+            <TimelineChart
+              data={timelineData}
+              timelineRange={timelineRange}
+              onRangeChange={setTimelineRange}
+            />
           </Suspense>
         )}
 
