@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Expense, Category, ExpenseFilters, CategoryTotal, PeriodStats, Period } from '../types';
+import { Expense, Category, ExpenseFilters, CategoryTotal, PeriodStats, Period, Budget, BudgetStatus } from '../types';
 import { databaseService } from '../database/database';
 import { FREE_TIER_LIMITS } from '../constants/categories';
 import { getCategoryColor } from '../utils/categoryUtils';
@@ -8,10 +8,12 @@ interface ExpenseStore {
   // Estado
   expenses: Expense[];
   categories: Category[];
+  budgets: Budget[];
+  activeBudget: Budget | null;
   loading: boolean;
   error: string | null;
   isPremium: boolean;
-  
+
   // Acciones
   initializeStore: () => Promise<void>;
   addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'synced'>) => Promise<boolean>;
@@ -19,17 +21,17 @@ interface ExpenseStore {
   deleteExpense: (id: number) => Promise<void>;
   updateExpense: (id: number, data: Partial<Expense>) => Promise<void>;
   loadCategories: () => Promise<void>;
-  
+
   // Estadísticas
   getTotalsByCategory: (startDate: string, endDate: string) => Promise<CategoryTotal[]>;
   getTotalByPeriod: (period: Period) => number;
   getRecentExpenses: (limit: number) => Expense[];
   getPeriodStats: (period: Period) => Promise<PeriodStats>;
-  
+
   // Validaciones
   canAddExpense: () => Promise<boolean>;
   getExpenseCountToday: () => Promise<number>;
-  
+
   // Utilidades
   clearError: () => void;
   clearAllData: () => Promise<void>;
@@ -38,12 +40,22 @@ interface ExpenseStore {
 
   // Premium
   upgradeToPremium: () => Promise<void>;
+
+  // Budget management
+  loadBudgets: () => Promise<void>;
+  createBudget: (budget: Omit<Budget, 'id' | 'createdAt' | 'updatedAt'>) => Promise<boolean>;
+  updateBudget: (id: number, data: Partial<Budget>) => Promise<boolean>;
+  deleteBudget: (id: number) => Promise<boolean>;
+  getBudgetStatus: () => Promise<BudgetStatus | null>;
+  checkBudgetAlerts: () => BudgetStatus | null;
 }
 
 export const useExpenseStore = create<ExpenseStore>((set, get) => ({
   // Estado inicial
   expenses: [],
   categories: [],
+  budgets: [],
+  activeBudget: null,
   loading: false,
   error: null,
   isPremium: false,
@@ -59,10 +71,11 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
       const premiumSetting = await databaseService.getSetting('isPremium');
       const isPremium = premiumSetting === 'true';
       
-      // Cargar categorías y gastos iniciales
+      // Cargar categorías, gastos y presupuestos iniciales
       await get().loadCategories();
       await get().getExpenses();
-      
+      await get().loadBudgets();
+
       set({ isPremium, loading: false });
     } catch (error) {
       console.error('Error initializing store:', error);
@@ -87,7 +100,13 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
 
       await databaseService.addExpense(expense);
       await get().getExpenses(); // Recargar gastos
-      
+
+      // Si hay un presupuesto activo, recargar su estado
+      const { activeBudget } = get();
+      if (activeBudget) {
+        await get().loadBudgets();
+      }
+
       set({ loading: false });
       return true;
     } catch (error) {
@@ -149,7 +168,13 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
 
       await databaseService.deleteExpense(id);
       await get().getExpenses(); // Recargar gastos
-      
+
+      // Si hay un presupuesto activo, recargar su estado
+      const { activeBudget } = get();
+      if (activeBudget) {
+        await get().loadBudgets();
+      }
+
       set({ loading: false });
     } catch (error) {
       console.error('Error deleting expense:', error);
@@ -163,7 +188,13 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
 
       await databaseService.updateExpense(id, data);
       await get().getExpenses(); // Recargar gastos
-      
+
+      // Si hay un presupuesto activo, recargar su estado
+      const { activeBudget } = get();
+      if (activeBudget) {
+        await get().loadBudgets();
+      }
+
       set({ loading: false });
     } catch (error) {
       console.error('Error updating expense:', error);
@@ -404,6 +435,8 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
       // Limpiar y recargar el estado del store, incluyendo resetear premium
       set({
         expenses: [],
+        budgets: [],
+        activeBudget: null,
         loading: false,
         error: null,
         isPremium: false,
@@ -467,6 +500,125 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
       console.error('Error upgrading to premium:', error);
       set({ error: 'Error al actualizar a Premium', loading: false });
     }
+  },
+
+  // Budget management
+  loadBudgets: async () => {
+    try {
+      const budgets = await databaseService.getBudgets();
+      const activeBudget = await databaseService.getActiveBudget();
+      set({ budgets, activeBudget });
+    } catch (error) {
+      console.error('Error loading budgets:', error);
+      set({ error: 'Error al cargar presupuestos' });
+    }
+  },
+
+  createBudget: async (budget) => {
+    try {
+      set({ loading: true, error: null });
+
+      // Desactivar presupuesto anterior si existe
+      const { activeBudget } = get();
+      if (activeBudget) {
+        await databaseService.updateBudget(activeBudget.id!, { isActive: false });
+      }
+
+      await databaseService.createBudget(budget);
+      await get().loadBudgets();
+
+      set({ loading: false });
+      return true;
+    } catch (error) {
+      console.error('Error creating budget:', error);
+      set({ error: 'Error al crear presupuesto', loading: false });
+      return false;
+    }
+  },
+
+  updateBudget: async (id, data) => {
+    try {
+      set({ loading: true, error: null });
+      await databaseService.updateBudget(id, data);
+      await get().loadBudgets();
+      set({ loading: false });
+      return true;
+    } catch (error) {
+      console.error('Error updating budget:', error);
+      set({ error: 'Error al actualizar presupuesto', loading: false });
+      return false;
+    }
+  },
+
+  deleteBudget: async (id) => {
+    try {
+      set({ loading: true, error: null });
+      await databaseService.deleteBudget(id);
+      await get().loadBudgets();
+      set({ loading: false });
+      return true;
+    } catch (error) {
+      console.error('Error deleting budget:', error);
+      set({ error: 'Error al eliminar presupuesto', loading: false });
+      return false;
+    }
+  },
+
+  getBudgetStatus: async () => {
+    try {
+      const { activeBudget } = get();
+      if (!activeBudget) return null;
+
+      const spent = await databaseService.getTotalSpentInBudgetPeriod(activeBudget);
+      const remaining = activeBudget.amount - spent;
+      const percentage = (spent / activeBudget.amount) * 100;
+
+      let status: 'safe' | 'warning' | 'exceeded' = 'safe';
+      if (percentage >= 100) {
+        status = 'exceeded';
+      } else if (percentage >= 75) {
+        status = 'warning';
+      }
+
+      // Calcular días restantes
+      const now = new Date();
+      const endDate = activeBudget.endDate ? new Date(activeBudget.endDate) : new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const startDate = new Date(activeBudget.startDate);
+
+      const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const daysElapsed = Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      const daysRemaining = Math.max(0, totalDays - daysElapsed);
+
+      const averageDailySpending = daysElapsed > 0 ? spent / daysElapsed : 0;
+      const recommendedDailyLimit = daysRemaining > 0 ? remaining / daysRemaining : 0;
+      const projectedTotal = averageDailySpending * totalDays;
+
+      return {
+        budget: activeBudget,
+        spent,
+        remaining,
+        percentage,
+        status,
+        daysRemaining,
+        totalDays,
+        averageDailySpending,
+        recommendedDailyLimit,
+        projectedTotal,
+      };
+    } catch (error) {
+      console.error('Error getting budget status:', error);
+      return null;
+    }
+  },
+
+  checkBudgetAlerts: () => {
+    const { activeBudget } = get();
+    if (!activeBudget) return null;
+
+    // Esta función se podría llamar cuando se agregue un gasto
+    // Por simplicidad, retornamos null aquí, pero se podría implementar
+    // lógica de notificaciones push basada en el porcentaje gastado
+    return null;
   },
 }));
 
