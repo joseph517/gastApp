@@ -9,8 +9,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme, ThemeColors } from "../contexts/ThemeContext";
 import { useDashboard } from "../hooks/useDashboard";
+import { useExpenseStore } from "../store/expenseStore";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import PeriodStatsCard from "../components/dashboard/PeriodStatsCard";
+import BudgetOverview from "../components/dashboard/BudgetOverview";
 import ChartSection from "../components/dashboard/ChartSection";
 import RecentExpensesSection from "../components/dashboard/RecentExpensesSection";
 import { DashboardScreenProps } from "../types/dashboard";
@@ -19,6 +21,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = createStyles(colors, insets);
+  const { isPremium } = useExpenseStore();
 
   const {
     selectedPeriod,
@@ -94,6 +97,19 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           formatCurrency={formatCurrency}
           getPeriodLabel={getPeriodLabel}
         />
+
+        {isPremium && (
+          <BudgetOverview onPress={() => {
+            // Navegar al tab de Statistics y directamente a Budget
+            const tabNavigator = navigation.getParent();
+            if (tabNavigator) {
+              tabNavigator.navigate('StatisticsTab', {
+                screen: 'Budget',
+                initial: false
+              });
+            }
+          }} />
+        )}
 
         <ChartSection data={categoryTotals} />
 
