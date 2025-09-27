@@ -70,6 +70,6 @@ export const PREMIUM_CATEGORIES: CategoryData[] = [
 
 export const FREE_TIER_LIMITS = {
   maxExpensesPerDay: 5,
-  historyDays: 90,
+  historyDays: 120,
   maxCategories: DEFAULT_CATEGORIES.length,
 };
