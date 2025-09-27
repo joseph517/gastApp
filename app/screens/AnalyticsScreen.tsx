@@ -18,10 +18,33 @@ import { Ionicons } from "@expo/vector-icons";
 import { CategoryTotal } from "../types";
 
 // Lazy load componentes pesados
-const TimelineChart = React.lazy(() => import("../components/analytics/TimelineChart"));
-const CategoryChart = React.lazy(() => import("../components/analytics/CategoryChart"));
-const MonthComparison = React.lazy(() => import("../components/analytics/MonthComparison"));
-const MonthlyPrediction = React.lazy(() => import("../components/analytics/MonthlyPrediction"));
+const TimelineChart = React.lazy(
+  () => import("../components/analytics/TimelineChart")
+);
+const CategoryChart = React.lazy(
+  () => import("../components/analytics/CategoryChart")
+);
+const MonthComparison = React.lazy(
+  () => import("../components/analytics/MonthComparison")
+);
+const MonthlyPrediction = React.lazy(
+  () => import("../components/analytics/MonthlyPrediction")
+);
+const InsightsSection = React.lazy(
+  () => import("../components/analytics/InsightsSection")
+);
+const CategoryChanges = React.lazy(
+  () => import("../components/analytics/CategoryChanges")
+);
+const FrequencyAnalysis = React.lazy(
+  () => import("../components/analytics/FrequencyAnalysis")
+);
+const CalendarHeatMap = React.lazy(
+  () => import("../components/analytics/CalendarHeatMap")
+);
+const WeeklySpendingChart = React.lazy(
+  () => import("../components/analytics/WeeklySpendingChart")
+);
 
 interface AnalyticsScreenProps {
   navigation: any;
@@ -45,6 +68,13 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
     monthComparison,
     monthlyPrediction,
     getTopCategories,
+    getBasicInsights,
+    getCategoryChanges,
+    getFrequencyAnalysis,
+    getCalendarHeatMapData,
+    getCalendarDataForMonth,
+    getWeeklySpendingData,
+    getWeeklyDataForWeek,
     refreshData,
     setTimelineRange,
     loading: analyticsLoading,
@@ -55,19 +85,19 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
   // Actualizar estados de carga cuando los datos estén listos
   React.useEffect(() => {
     if (monthlyPrediction !== null) {
-      setLoadingStates(prev => ({ ...prev, prediction: false }));
+      setLoadingStates((prev) => ({ ...prev, prediction: false }));
     }
   }, [monthlyPrediction]);
 
   React.useEffect(() => {
     if (monthComparison !== null) {
-      setLoadingStates(prev => ({ ...prev, comparison: false }));
+      setLoadingStates((prev) => ({ ...prev, comparison: false }));
     }
   }, [monthComparison]);
 
   React.useEffect(() => {
     if (timelineData.length > 0) {
-      setLoadingStates(prev => ({ ...prev, timeline: false }));
+      setLoadingStates((prev) => ({ ...prev, timeline: false }));
     }
   }, [timelineData]);
 
@@ -80,12 +110,12 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
         const categories = await getTopCategories("month");
         if (isMounted) {
           setTopCategories(categories);
-          setLoadingStates(prev => ({ ...prev, categories: false }));
+          setLoadingStates((prev) => ({ ...prev, categories: false }));
         }
       } catch (error) {
         console.error("Error loading categories:", error);
         if (isMounted) {
-          setLoadingStates(prev => ({ ...prev, categories: false }));
+          setLoadingStates((prev) => ({ ...prev, categories: false }));
         }
       }
     };
@@ -135,6 +165,11 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
           </View>
         </View>
 
+        {/* Insights Automáticos */}
+        <Suspense fallback={<LoadingCard height={150} />}>
+          <InsightsSection insights={getBasicInsights()} />
+        </Suspense>
+
         {/* Predicción mensual */}
         {loadingStates.prediction ? (
           <LoadingCard height={300} />
@@ -152,6 +187,11 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
             <MonthComparison comparison={monthComparison} />
           </Suspense>
         )}
+
+        {/* Cambios por categoría */}
+        <Suspense fallback={<LoadingCard height={300} />}>
+          <CategoryChanges {...getCategoryChanges()} title="Cambios Este Mes" />
+        </Suspense>
 
         {/* Gráfico de línea temporal */}
         {loadingStates.timeline ? (
@@ -179,8 +219,35 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
           </Suspense>
         )}
 
+        {/* Análisis de frecuencia */}
+        <Suspense fallback={<LoadingCard height={400} />}>
+          <FrequencyAnalysis
+            frequencies={getFrequencyAnalysis()}
+            title="Patrones de Gasto"
+          />
+        </Suspense>
+
+        {/* Heat Map del Calendario */}
+        <Suspense fallback={<LoadingCard height={450} />}>
+          <CalendarHeatMap
+            data={getCalendarHeatMapData()}
+            month={new Date()}
+            title="Mapa de Calor - Gastos Diarios"
+            getCalendarDataForMonth={getCalendarDataForMonth}
+          />
+        </Suspense>
+
+        {/* Gastos por Día de Semana */}
+        <Suspense fallback={<LoadingCard height={350} />}>
+          <WeeklySpendingChart
+            {...getWeeklySpendingData()}
+            title="Patrones Semanales"
+            getWeeklyDataForWeek={getWeeklyDataForWeek}
+          />
+        </Suspense>
+
         {/* Espacio adicional para el bottom tab */}
-        <View style={{ height: 100 }} />
+        <View style={{ height: 30 }} />
       </ScrollView>
     </View>
   );

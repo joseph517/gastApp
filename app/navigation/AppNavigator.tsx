@@ -11,7 +11,6 @@ import DashboardScreen from "../screens/DashboardScreen";
 import AddExpenseScreen from "../screens/AddExpenseScreen";
 import StatisticsScreen from "../screens/StatisticsScreen";
 import AnalyticsScreen from "../screens/AnalyticsScreen";
-import AnalyticsScreenTest from "../screens/AnalyticsScreenTest";
 import SettingsScreen from "../screens/SettingsScreen";
 
 const Tab = createBottomTabNavigator();
