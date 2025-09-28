@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../contexts/ThemeContext";
+import { getWeekRange } from "../../utils/dateUtils";
 import {
   SPACING,
   FONT_SIZES,
@@ -19,7 +20,7 @@ import {
 } from "../../constants/colors";
 
 export interface WeeklySpendingData {
-  dayOfWeek: number; // 0-6 (Domingo-Sábado)
+  dayOfWeek: number; // 0-6 (Lunes-Domingo)
   dayName: string;
   totalAmount: number; // Total gastado ese día
   totalTransactions: number;
@@ -154,17 +155,8 @@ const WeeklySpendingChart: React.FC<WeeklySpendingChartProps> = React.memo(
     };
 
     const getWeekTitle = () => {
-      const now = new Date();
-      const currentWeekStart = new Date(now);
-      currentWeekStart.setDate(now.getDate() - now.getDay());
-
-      const targetWeekStart = new Date(currentWeekStart);
-      targetWeekStart.setDate(
-        currentWeekStart.getDate() - currentWeekOffset * 7
-      );
-
-      const targetWeekEnd = new Date(targetWeekStart);
-      targetWeekEnd.setDate(targetWeekStart.getDate() + 6);
+      // Usar las funciones utilitarias centralizadas
+      const { start: targetWeekStart, end: targetWeekEnd } = getWeekRange(currentWeekOffset);
 
       const startDay = targetWeekStart.getDate();
       const endDay = targetWeekEnd.getDate();
