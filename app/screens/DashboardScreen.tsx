@@ -99,19 +99,19 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         />
 
         {isPremium && (
-          <BudgetOverview onPress={() => {
-            // Navegar al tab de Statistics y directamente a Budget
-            const tabNavigator = navigation.getParent();
-            if (tabNavigator) {
-              tabNavigator.navigate('StatisticsTab', {
-                screen: 'Budget',
-                initial: false
-              });
-            }
-          }} />
+          <BudgetOverview
+            onPress={() => {
+              // Navegar al tab de Statistics y directamente a Budget
+              const tabNavigator = navigation.getParent();
+              if (tabNavigator) {
+                tabNavigator.navigate("StatisticsTab", {
+                  screen: "Budget",
+                  initial: false,
+                });
+              }
+            }}
+          />
         )}
-
-        <ChartSection data={categoryTotals} />
 
         <RecentExpensesSection
           expenses={recentExpenses}
