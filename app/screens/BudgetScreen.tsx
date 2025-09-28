@@ -17,6 +17,10 @@ import { BudgetStatus } from "../types";
 import BudgetCard from "../components/budget/BudgetCard";
 import BudgetForm from "../components/budget/BudgetForm";
 import BudgetStatusCard from "../components/budget/BudgetStatusCard";
+import BudgetAlertsCard from "../components/budget/BudgetAlertsCard";
+import BudgetPerformanceCard from "../components/budget/BudgetPerformanceCard";
+import BudgetPredictionsCard from "../components/budget/BudgetPredictionsCard";
+import BudgetSettingsCard from "../components/budget/BudgetSettingsCard";
 
 interface BudgetScreenProps {
   navigation: any;
@@ -169,6 +173,18 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
 
         {/* Budget Status */}
         {budgetStatus && <BudgetStatusCard budgetStatus={budgetStatus} />}
+
+        {/* Budget Alerts */}
+        {activeBudget && <BudgetAlertsCard />}
+
+        {/* Budget Performance Analytics */}
+        <BudgetPerformanceCard />
+
+        {/* Budget Predictions */}
+        <BudgetPredictionsCard budgetStatus={budgetStatus} />
+
+        {/* Budget Settings */}
+        <BudgetSettingsCard />
 
         {/* Active Budget */}
         {activeBudget && (

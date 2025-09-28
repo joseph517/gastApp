@@ -3,6 +3,7 @@ import { Expense, Category, ExpenseFilters, CategoryTotal, PeriodStats, Period, 
 import { databaseService } from '../database/database';
 import { FREE_TIER_LIMITS } from '../constants/categories';
 import { getCategoryColor } from '../utils/categoryUtils';
+import { budgetNotificationService } from '../services/budgetNotificationService';
 
 interface ExpenseStore {
   // Estado
@@ -47,7 +48,7 @@ interface ExpenseStore {
   updateBudget: (id: number, data: Partial<Budget>) => Promise<boolean>;
   deleteBudget: (id: number) => Promise<boolean>;
   getBudgetStatus: () => Promise<BudgetStatus | null>;
-  checkBudgetAlerts: () => BudgetStatus | null;
+  checkBudgetAlerts: () => Promise<BudgetStatus | null>;
 }
 
 export const useExpenseStore = create<ExpenseStore>((set, get) => ({
@@ -101,10 +102,11 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
       await databaseService.addExpense(expense);
       await get().getExpenses(); // Recargar gastos
 
-      // Si hay un presupuesto activo, recargar su estado
+      // Si hay un presupuesto activo, recargar su estado y verificar alertas
       const { activeBudget } = get();
       if (activeBudget) {
         await get().loadBudgets();
+        await get().checkBudgetAlerts();
       }
 
       set({ loading: false });
@@ -169,10 +171,11 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
       await databaseService.deleteExpense(id);
       await get().getExpenses(); // Recargar gastos
 
-      // Si hay un presupuesto activo, recargar su estado
+      // Si hay un presupuesto activo, recargar su estado y verificar alertas
       const { activeBudget } = get();
       if (activeBudget) {
         await get().loadBudgets();
+        await get().checkBudgetAlerts();
       }
 
       set({ loading: false });
@@ -189,10 +192,11 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
       await databaseService.updateExpense(id, data);
       await get().getExpenses(); // Recargar gastos
 
-      // Si hay un presupuesto activo, recargar su estado
+      // Si hay un presupuesto activo, recargar su estado y verificar alertas
       const { activeBudget } = get();
       if (activeBudget) {
         await get().loadBudgets();
+        await get().checkBudgetAlerts();
       }
 
       set({ loading: false });
@@ -611,14 +615,19 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
     }
   },
 
-  checkBudgetAlerts: () => {
-    const { activeBudget } = get();
-    if (!activeBudget) return null;
+  checkBudgetAlerts: async () => {
+    try {
+      const budgetStatus = await get().getBudgetStatus();
+      if (!budgetStatus) return null;
 
-    // Esta función se podría llamar cuando se agregue un gasto
-    // Por simplicidad, retornamos null aquí, pero se podría implementar
-    // lógica de notificaciones push basada en el porcentaje gastado
-    return null;
+      // Verificar y generar alertas usando el servicio de notificaciones
+      await budgetNotificationService.checkBudgetAlerts(budgetStatus);
+
+      return budgetStatus;
+    } catch (error) {
+      console.error('Error checking budget alerts:', error);
+      return null;
+    }
   },
 }));
 
