@@ -83,7 +83,6 @@ class DatabaseService {
       }
 
       this.db = await SQLite.openDatabaseAsync("gastapp.db");
-      console.log("Database opened successfully:", this.db);
 
       // Test connection immediately
       await this.db.getFirstAsync("SELECT 1");
@@ -191,7 +190,6 @@ class DatabaseService {
       );
     `);
 
-    console.log("Recurring expenses tables created or verified");
   }
 
   private async createIndexes(): Promise<void> {
@@ -639,8 +637,6 @@ class DatabaseService {
     expense: Omit<RecurringExpense, "id" | "createdAt" | "updatedAt">
   ): Promise<number> {
     return this.executeWithConnection(async (db) => {
-      console.log("Creating recurring expense with data:", expense);
-
       const result = await db.runAsync(
         `INSERT INTO recurring_expenses (
           amount, description, category, frequency, interval_days,
@@ -662,15 +658,6 @@ class DatabaseService {
           expense.notifyDaysBefore,
         ]
       );
-
-      console.log("Recurring expense created with ID:", result.lastInsertRowId);
-
-      // Verificar que se guardó correctamente
-      const verifyResult = await db.getFirstAsync(
-        "SELECT * FROM recurring_expenses WHERE id = ?",
-        [result.lastInsertRowId]
-      );
-      console.log("Verification result:", verifyResult);
 
       return result.lastInsertRowId;
     }, "createRecurringExpense");
