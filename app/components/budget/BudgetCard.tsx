@@ -38,6 +38,26 @@ const BudgetCard: React.FC<BudgetCardProps> = ({
     });
   };
 
+  const formatPeriod = (period: string) => {
+    const periodLabels = {
+      'weekly': 'Semanal',
+      'monthly': 'Mensual',
+      'quarterly': 'Trimestral',
+      'custom': 'Personalizado'
+    };
+    return periodLabels[period] || 'Mensual';
+  };
+
+  const getPeriodIcon = (period: string) => {
+    const periodIcons = {
+      'weekly': 'calendar-outline',
+      'monthly': 'calendar',
+      'quarterly': 'calendar-sharp',
+      'custom': 'create-outline'
+    };
+    return periodIcons[period] || 'calendar';
+  };
+
   const getStatusColor = () => {
     if (!budgetStatus || isHistorical) return colors.textSecondary;
 
@@ -60,9 +80,16 @@ const BudgetCard: React.FC<BudgetCardProps> = ({
     <View style={[styles.container, { backgroundColor: colors.cardBackground }]}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>
-            Presupuesto {budget.period === 'monthly' ? 'Mensual' : 'Personalizado'}
-          </Text>
+          <View style={styles.titleRow}>
+            <Ionicons
+              name={getPeriodIcon(budget.period) as any}
+              size={18}
+              color={colors.primary}
+            />
+            <Text style={[styles.title, { color: colors.textPrimary }]}>
+              Presupuesto {formatPeriod(budget.period)}
+            </Text>
+          </View>
           <Text style={[styles.amount, { color: colors.primary }]}>
             {formatCurrency(budget.amount)}
           </Text>
@@ -170,10 +197,15 @@ const styles = StyleSheet.create({
   titleContainer: {
     flex: 1,
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
   title: {
     fontSize: FONT_SIZES.md,
     fontWeight: "600",
-    marginBottom: 4,
+    marginLeft: SPACING.xs,
   },
   amount: {
     fontSize: FONT_SIZES.xl,
