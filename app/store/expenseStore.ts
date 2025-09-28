@@ -4,6 +4,7 @@ import { databaseService } from '../database/database';
 import { FREE_TIER_LIMITS } from '../constants/categories';
 import { getCategoryColor } from '../utils/categoryUtils';
 import { budgetNotificationService } from '../services/budgetNotificationService';
+import { getWeekStart, getWeekEnd } from '../utils/dateUtils';
 
 interface ExpenseStore {
   // Estado
@@ -283,19 +284,12 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
     const now = new Date();
 
     // Funciones auxiliares para calcular períodos calendarios
+    // Usar funciones utilitarias centralizadas para evitar duplicación
     const getWeekBounds = (date: Date) => {
-      const d = new Date(date);
-      // Lunes como primer día de la semana (1 = lunes, 0 = domingo)
-      const day = d.getDay();
-      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(d.setDate(diff));
-      monday.setHours(0, 0, 0, 0);
-
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      sunday.setHours(23, 59, 59, 999);
-
-      return { start: monday, end: sunday };
+      return {
+        start: getWeekStart(date),
+        end: getWeekEnd(date)
+      };
     };
 
     const getMonthBounds = (date: Date) => {
