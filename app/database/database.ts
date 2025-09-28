@@ -4,6 +4,8 @@ import {
   CREATE_CATEGORIES_TABLE,
   CREATE_SETTINGS_TABLE,
   CREATE_BUDGETS_TABLE,
+  CREATE_RECURRING_EXPENSES_TABLE,
+  CREATE_PENDING_RECURRING_EXPENSES_TABLE,
   CREATE_INDEXES,
   DEFAULT_SETTINGS,
 } from "./schema";
@@ -11,7 +13,7 @@ import {
   DEFAULT_CATEGORIES,
   PREMIUM_CATEGORIES,
 } from "../constants/categories";
-import { Expense, Category, Setting, Budget } from "../types";
+import { Expense, Category, Setting, Budget, RecurringExpense, PendingRecurringExpense } from "../types";
 
 // Simple mutex implementation
 class Mutex {
@@ -144,6 +146,46 @@ class DatabaseService {
     await this.db.execAsync(CREATE_CATEGORIES_TABLE);
     await this.db.execAsync(CREATE_SETTINGS_TABLE);
     await this.db.execAsync(CREATE_BUDGETS_TABLE);
+
+    // Para las tablas de gastos recurrentes, forzar la recreación con la estructura correcta
+    await this.db.execAsync("DROP TABLE IF EXISTS pending_recurring_expenses;");
+    await this.db.execAsync("DROP TABLE IF EXISTS recurring_expenses;");
+
+    // Crear con la estructura correcta (sin template_name)
+    await this.db.execAsync(`
+      CREATE TABLE recurring_expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        amount REAL NOT NULL,
+        description TEXT NOT NULL,
+        category TEXT NOT NULL,
+        frequency TEXT DEFAULT 'custom',
+        interval_days INTEGER NOT NULL CHECK (interval_days IN (7, 15, 30)),
+        start_date TEXT NOT NULL,
+        end_date TEXT,
+        next_due_date TEXT NOT NULL,
+        is_active INTEGER DEFAULT 1,
+        requires_confirmation INTEGER DEFAULT 1,
+        last_executed TEXT,
+        execution_dates TEXT,
+        notify_days_before INTEGER DEFAULT 1,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await this.db.execAsync(`
+      CREATE TABLE pending_recurring_expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        recurring_expense_id INTEGER NOT NULL,
+        scheduled_date TEXT NOT NULL,
+        amount REAL NOT NULL,
+        description TEXT NOT NULL,
+        category TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (recurring_expense_id) REFERENCES recurring_expenses(id) ON DELETE CASCADE
+      );
+    `);
   }
 
   private async createIndexes(): Promise<void> {
@@ -427,6 +469,10 @@ class DatabaseService {
       // Eliminar todos los presupuestos
       await db.runAsync("DELETE FROM budgets");
 
+      // Eliminar gastos recurrentes
+      await db.runAsync("DELETE FROM recurring_expenses");
+      await db.runAsync("DELETE FROM pending_recurring_expenses");
+
       // Eliminar todas las categorías personalizadas
       await db.runAsync("DELETE FROM categories");
 
@@ -572,6 +618,281 @@ class DatabaseService {
 
       return result.total;
     }, "getTotalSpentInBudgetPeriod");
+  }
+
+  // Recurring Expenses operations
+  async createRecurringExpense(expense: Omit<RecurringExpense, "id" | "createdAt" | "updatedAt">): Promise<number> {
+    return this.executeWithConnection(async (db) => {
+      const result = await db.runAsync(
+        `INSERT INTO recurring_expenses (
+          amount, description, category, frequency, interval_days,
+          start_date, end_date, next_due_date, is_active, requires_confirmation,
+          execution_dates, notify_days_before, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [
+          expense.amount,
+          expense.description,
+          expense.category,
+          expense.frequency,
+          expense.intervalDays,
+          expense.startDate,
+          expense.endDate || null,
+          expense.nextDueDate,
+          expense.isActive ? 1 : 0,
+          expense.requiresConfirmation ? 1 : 0,
+          JSON.stringify(expense.executionDates),
+          expense.notifyDaysBefore
+        ]
+      );
+      return result.lastInsertRowId;
+    }, "createRecurringExpense");
+  }
+
+  async getRecurringExpenses(): Promise<RecurringExpense[]> {
+    return this.executeWithConnection(async (db) => {
+      const result = await db.getAllAsync(
+        "SELECT * FROM recurring_expenses ORDER BY created_at DESC"
+      );
+
+      return result.map((row: any) => ({
+        id: row.id,
+        amount: row.amount,
+        description: row.description,
+        category: row.category,
+        frequency: row.frequency,
+        intervalDays: row.interval_days,
+        startDate: row.start_date,
+        endDate: row.end_date,
+        nextDueDate: row.next_due_date,
+        isActive: Boolean(row.is_active),
+        requiresConfirmation: Boolean(row.requires_confirmation),
+        lastExecuted: row.last_executed,
+        executionDates: JSON.parse(row.execution_dates || "[]"),
+        notifyDaysBefore: row.notify_days_before,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }));
+    }, "getRecurringExpenses");
+  }
+
+  async getActiveRecurringExpenses(): Promise<RecurringExpense[]> {
+    return this.executeWithConnection(async (db) => {
+      const result = await db.getAllAsync(
+        "SELECT * FROM recurring_expenses WHERE is_active = 1 ORDER BY next_due_date ASC"
+      );
+
+      return result.map((row: any) => ({
+        id: row.id,
+        amount: row.amount,
+        description: row.description,
+        category: row.category,
+        frequency: row.frequency,
+        intervalDays: row.interval_days,
+        startDate: row.start_date,
+        endDate: row.end_date,
+        nextDueDate: row.next_due_date,
+        isActive: Boolean(row.is_active),
+        requiresConfirmation: Boolean(row.requires_confirmation),
+        lastExecuted: row.last_executed,
+        executionDates: JSON.parse(row.execution_dates || "[]"),
+        notifyDaysBefore: row.notify_days_before,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }));
+    }, "getActiveRecurringExpenses");
+  }
+
+  async updateRecurringExpense(id: number, data: Partial<RecurringExpense>): Promise<void> {
+    return this.executeWithConnection(async (db) => {
+      const fieldMap: Record<string, string> = {
+        intervalDays: "interval_days",
+        startDate: "start_date",
+        endDate: "end_date",
+        nextDueDate: "next_due_date",
+        isActive: "is_active",
+        requiresConfirmation: "requires_confirmation",
+        lastExecuted: "last_executed",
+        executionDates: "execution_dates",
+        notifyDaysBefore: "notify_days_before",
+      };
+
+      const fields = Object.keys(data)
+        .filter((key) => key !== "id" && key !== "createdAt")
+        .map((key) => {
+          const dbField = fieldMap[key] || key;
+          return `${dbField} = ?`;
+        });
+
+      const values = Object.keys(data)
+        .filter((key) => key !== "id" && key !== "createdAt")
+        .map((key) => {
+          const value = data[key as keyof RecurringExpense];
+          if (key === "isActive" || key === "requiresConfirmation") {
+            return value ? 1 : 0;
+          }
+          if (key === "executionDates") {
+            return JSON.stringify(value);
+          }
+          return value;
+        });
+
+      if (fields.length === 0) return;
+
+      fields.push("updated_at = CURRENT_TIMESTAMP");
+
+      const query = `UPDATE recurring_expenses SET ${fields.join(", ")} WHERE id = ?`;
+      await db.runAsync(query, [...values.filter(v => v !== undefined), id]);
+    }, "updateRecurringExpense");
+  }
+
+  async deleteRecurringExpense(id: number): Promise<void> {
+    return this.executeWithConnection(async (db) => {
+      await db.runAsync("DELETE FROM recurring_expenses WHERE id = ?", [id]);
+    }, "deleteRecurringExpense");
+  }
+
+  // Pending Recurring Expenses operations
+  async createPendingRecurringExpense(pending: Omit<PendingRecurringExpense, "id" | "createdAt">): Promise<number> {
+    return this.executeWithConnection(async (db) => {
+      const result = await db.runAsync(
+        `INSERT INTO pending_recurring_expenses (
+          recurring_expense_id, scheduled_date, amount, description, category, status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+        [
+          pending.recurringExpenseId,
+          pending.scheduledDate,
+          pending.amount,
+          pending.description,
+          pending.category,
+          pending.status
+        ]
+      );
+      return result.lastInsertRowId;
+    }, "createPendingRecurringExpense");
+  }
+
+  async getPendingRecurringExpenses(): Promise<PendingRecurringExpense[]> {
+    return this.executeWithConnection(async (db) => {
+      const result = await db.getAllAsync(
+        `SELECT p.*
+         FROM pending_recurring_expenses p
+         JOIN recurring_expenses r ON p.recurring_expense_id = r.id
+         WHERE p.status = 'pending'
+         ORDER BY p.scheduled_date ASC`
+      );
+
+      return result.map((row: any) => ({
+        id: row.id,
+        recurringExpenseId: row.recurring_expense_id,
+        scheduledDate: row.scheduled_date,
+        amount: row.amount,
+        description: row.description,
+        category: row.category,
+        status: row.status,
+        createdAt: row.created_at,
+      }));
+    }, "getPendingRecurringExpenses");
+  }
+
+  async updatePendingRecurringExpense(id: number, data: Partial<PendingRecurringExpense>): Promise<void> {
+    return this.executeWithConnection(async (db) => {
+      const fieldMap: Record<string, string> = {
+        recurringExpenseId: "recurring_expense_id",
+        scheduledDate: "scheduled_date",
+      };
+
+      const fields = Object.keys(data)
+        .filter((key) => key !== "id" && key !== "createdAt")
+        .map((key) => {
+          const dbField = fieldMap[key] || key;
+          return `${dbField} = ?`;
+        });
+
+      const values = Object.values(data).filter(
+        (_, index) => Object.keys(data)[index] !== "id" && Object.keys(data)[index] !== "createdAt"
+      );
+
+      if (fields.length === 0) return;
+
+      const query = `UPDATE pending_recurring_expenses SET ${fields.join(", ")} WHERE id = ?`;
+      await db.runAsync(query, [...values, id]);
+    }, "updatePendingRecurringExpense");
+  }
+
+  async deletePendingRecurringExpense(id: number): Promise<void> {
+    return this.executeWithConnection(async (db) => {
+      await db.runAsync("DELETE FROM pending_recurring_expenses WHERE id = ?", [id]);
+    }, "deletePendingRecurringExpense");
+  }
+
+  // Migration methods
+  async fixRecurringExpensesTable(): Promise<boolean> {
+    return this.executeWithConnection(async (db) => {
+      try {
+        // Verificar si la tabla existe y tiene la estructura correcta
+        const tableInfo = await db.getAllAsync("PRAGMA table_info(recurring_expenses)");
+        const hasTemplateName = tableInfo.some((column: any) => column.name === 'template_name');
+
+        if (!hasTemplateName) {
+          console.log("Table structure is already correct");
+          return true;
+        }
+
+        console.log("Fixing recurring_expenses table structure...");
+
+        // Simplemente eliminar y recrear la tabla (solo para desarrollo)
+        await db.execAsync("DROP TABLE IF EXISTS recurring_expenses;");
+        await db.execAsync("DROP TABLE IF EXISTS pending_recurring_expenses;");
+
+        // Recrear con la estructura correcta
+        await db.execAsync(`
+          CREATE TABLE IF NOT EXISTS recurring_expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            amount REAL NOT NULL,
+            description TEXT NOT NULL,
+            category TEXT NOT NULL,
+            frequency TEXT DEFAULT 'custom',
+            interval_days INTEGER NOT NULL CHECK (interval_days IN (7, 15, 30)),
+            start_date TEXT NOT NULL,
+            end_date TEXT,
+            next_due_date TEXT NOT NULL,
+            is_active INTEGER DEFAULT 1,
+            requires_confirmation INTEGER DEFAULT 1,
+            last_executed TEXT,
+            execution_dates TEXT,
+            notify_days_before INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+
+        await db.execAsync(`
+          CREATE TABLE IF NOT EXISTS pending_recurring_expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            recurring_expense_id INTEGER NOT NULL,
+            scheduled_date TEXT NOT NULL,
+            amount REAL NOT NULL,
+            description TEXT NOT NULL,
+            category TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (recurring_expense_id) REFERENCES recurring_expenses(id) ON DELETE CASCADE
+          );
+        `);
+
+        // Recrear índices
+        await db.execAsync("CREATE INDEX IF NOT EXISTS idx_recurring_next_due ON recurring_expenses(next_due_date);");
+        await db.execAsync("CREATE INDEX IF NOT EXISTS idx_recurring_active ON recurring_expenses(is_active);");
+        await db.execAsync("CREATE INDEX IF NOT EXISTS idx_pending_status ON pending_recurring_expenses(status);");
+        await db.execAsync("CREATE INDEX IF NOT EXISTS idx_pending_scheduled ON pending_recurring_expenses(scheduled_date);");
+
+        console.log("Table structure fixed successfully");
+        return true;
+      } catch (error) {
+        console.error("Failed to fix table structure:", error);
+        return false;
+      }
+    }, "fixRecurringExpensesTable");
   }
 }
 
