@@ -1,5 +1,5 @@
 import { databaseService } from '../database/database';
-import { RecurringExpense, PendingRecurringExpense, Expense } from '../types';
+import { RecurringExpense, PendingRecurringExpense, Expense, OverdueExpense, MultipleDatesConfig } from '../types';
 
 class RecurringExpenseService {
   private static instance: RecurringExpenseService;
@@ -16,51 +16,10 @@ class RecurringExpenseService {
   /**
    * Calcula la próxima fecha de vencimiento basada en la frecuencia
    */
-  calculateNextDueDate(startDate: string, intervalDays: number, executionDates?: number[]): string {
+  calculateNextDueDate(startDate: string, intervalDays: number): string {
     const start = new Date(startDate);
-    const today = new Date();
-
-    // Si hay fechas específicas del mes (ej: [1, 15])
-    if (executionDates && executionDates.length > 0) {
-      return this.calculateNextDueDateForMultipleDates(executionDates);
-    }
-
-    // Para intervalos simples (7, 15, 30 días)
-    let nextDate = new Date(start);
-
-    // Avanzar hasta encontrar la próxima fecha >= hoy
-    while (nextDate <= today) {
-      nextDate.setDate(nextDate.getDate() + intervalDays);
-    }
-
-    return nextDate.toISOString().split('T')[0];
-  }
-
-  /**
-   * Calcula la próxima fecha para múltiples fechas del mes
-   */
-  private calculateNextDueDateForMultipleDates(executionDates: number[]): string {
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    const currentDay = today.getDate();
-
-    // Buscar la próxima fecha en el mes actual
-    const sortedDates = executionDates.sort((a, b) => a - b);
-
-    for (const day of sortedDates) {
-      if (day > currentDay) {
-        const nextDate = new Date(currentYear, currentMonth, day);
-        return nextDate.toISOString().split('T')[0];
-      }
-    }
-
-    // Si no hay fechas restantes en el mes actual, usar la primera del próximo mes
-    const firstDayNextMonth = sortedDates[0];
-    const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
-    const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
-
-    const nextDate = new Date(nextYear, nextMonth, firstDayNextMonth);
+    const nextDate = new Date(start);
+    nextDate.setDate(nextDate.getDate() + intervalDays);
     return nextDate.toISOString().split('T')[0];
   }
 
@@ -73,21 +32,41 @@ class RecurringExpenseService {
       const today = new Date().toISOString().split('T')[0];
 
       for (const recurring of activeRecurringExpenses) {
-        // Si la fecha de vencimiento es hoy o anterior
         if (recurring.nextDueDate <= today) {
-          await this.createPendingExpenseFromRecurring(recurring);
+          // Phase 2: Soporte para múltiples fechas
+          if (recurring.executionDates) {
+            const currentDate = new Date();
+            await this.generatePendingExpensesForMultipleDates(
+              recurring,
+              currentDate.getFullYear(),
+              currentDate.getMonth()
+            );
 
-          // Actualizar la próxima fecha de vencimiento
-          const nextDueDate = this.calculateNextDueDate(
-            recurring.nextDueDate,
-            recurring.intervalDays,
-            recurring.executionDates
-          );
+            // Calcular próxima fecha usando lógica avanzada
+            const nextDueDate = this.calculateAdvancedNextDueDate(
+              recurring.nextDueDate,
+              recurring.intervalDays,
+              this.parseExecutionDates(recurring.executionDates)
+            );
 
-          await databaseService.updateRecurringExpense(recurring.id!, {
-            nextDueDate,
-            lastExecuted: today
-          });
+            await databaseService.updateRecurringExpense(recurring.id!, {
+              nextDueDate,
+              lastExecuted: today
+            });
+          } else {
+            // Lógica simple para intervalos regulares
+            await this.createPendingExpenseFromRecurring(recurring);
+
+            const nextDueDate = this.calculateNextDueDate(
+              recurring.nextDueDate,
+              recurring.intervalDays
+            );
+
+            await databaseService.updateRecurringExpense(recurring.id!, {
+              nextDueDate,
+              lastExecuted: today
+            });
+          }
         }
       }
     } catch (error) {
@@ -96,12 +75,30 @@ class RecurringExpenseService {
   }
 
   /**
+   * Helper para parsear execution dates de forma segura
+   */
+  private parseExecutionDates(executionDates: any): number[] | undefined {
+    try {
+      if (typeof executionDates === 'string') {
+        const parsed = JSON.parse(executionDates);
+        return Array.isArray(parsed) ? parsed : undefined;
+      }
+      return Array.isArray(executionDates) ? executionDates : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
    * Crea un gasto pendiente a partir de un gasto recurrente
    */
-  private async createPendingExpenseFromRecurring(recurring: RecurringExpense): Promise<void> {
+  private async createPendingExpenseFromRecurring(
+    recurring: RecurringExpense,
+    scheduledDate?: string
+  ): Promise<void> {
     const pendingExpense: Omit<PendingRecurringExpense, "id" | "createdAt"> = {
       recurringExpenseId: recurring.id!,
-      scheduledDate: recurring.nextDueDate,
+      scheduledDate: scheduledDate || recurring.nextDueDate,
       amount: recurring.amount,
       description: recurring.description,
       category: recurring.category,
@@ -141,7 +138,7 @@ class RecurringExpenseService {
         status: 'confirmed'
       });
 
-      // Opcional: eliminar el pending después de confirmar
+      // Eliminar el pending después de confirmar
       await databaseService.deletePendingRecurringExpense(pendingId);
 
       return true;
@@ -171,63 +168,6 @@ class RecurringExpenseService {
   }
 
   /**
-   * Marca gastos pendientes como vencidos
-   */
-  async markOverdueExpenses(): Promise<void> {
-    try {
-      const pending = await databaseService.getPendingRecurringExpenses();
-      const today = new Date().toISOString().split('T')[0];
-
-      for (const pendingExpense of pending) {
-        // Si la fecha programada es anterior a hoy, marcar como vencido
-        if (pendingExpense.scheduledDate < today && pendingExpense.status === 'pending') {
-          await databaseService.updatePendingRecurringExpense(pendingExpense.id!, {
-            status: 'overdue'
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error marking overdue expenses:', error);
-    }
-  }
-
-  /**
-   * Obtiene estadísticas de gastos recurrentes
-   */
-  async getRecurringExpenseStats(startDate: string, endDate: string) {
-    try {
-      // Obtener todos los gastos del período
-      const allExpenses = await databaseService.getExpensesByDateRange(startDate, endDate);
-
-      // Obtener gastos recurrentes confirmados (los que vienen de pending)
-      const recurringExpenses = allExpenses.filter(expense => {
-        // Aquí necesitaríamos una forma de identificar si un gasto vino de un recurring
-        // Por simplicidad, asumiremos que llevamos un registro o identificador
-        return false; // TODO: Implementar lógica de identificación
-      });
-
-      const manualExpenses = allExpenses.filter(expense =>
-        !recurringExpenses.includes(expense)
-      );
-
-      const totalRecurring = recurringExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-      const totalManual = manualExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-
-      return {
-        totalRecurring,
-        totalManual,
-        totalCombined: totalRecurring + totalManual,
-        recurringCount: recurringExpenses.length,
-        manualCount: manualExpenses.length,
-        recurringPercentage: totalRecurring / (totalRecurring + totalManual) * 100
-      };
-    } catch (error) {
-      console.error('Error getting recurring stats:', error);
-      return null;
-    }
-  }
-
-  /**
    * Calcula la proyección mensual de gastos recurrentes
    */
   async calculateMonthlyProjection(): Promise<number> {
@@ -239,22 +179,18 @@ class RecurringExpenseService {
         // Calcular cuántas veces se ejecutará en un mes
         let monthlyExecutions = 0;
 
-        if (recurring.executionDates && recurring.executionDates.length > 0) {
-          // Para fechas específicas del mes
-          monthlyExecutions = recurring.executionDates.length;
-        } else {
-          // Para intervalos regulares
-          switch (recurring.intervalDays) {
-            case 7:
-              monthlyExecutions = 4.33; // ~30/7
-              break;
-            case 15:
-              monthlyExecutions = 2;
-              break;
-            case 30:
-              monthlyExecutions = 1;
-              break;
-          }
+        switch (recurring.intervalDays) {
+          case 7:
+            monthlyExecutions = 4.33; // ~30/7
+            break;
+          case 15:
+            monthlyExecutions = 2;
+            break;
+          case 30:
+            monthlyExecutions = 1;
+            break;
+          default:
+            monthlyExecutions = 30 / recurring.intervalDays;
         }
 
         monthlyTotal += recurring.amount * monthlyExecutions;
@@ -293,17 +229,256 @@ class RecurringExpenseService {
       errors.push('La fecha de inicio es requerida');
     }
 
-    if (data.executionDates && data.executionDates.length > 0) {
-      const invalidDates = data.executionDates.filter(day => day < 1 || day > 31);
-      if (invalidDates.length > 0) {
-        errors.push('Los días de ejecución deben estar entre 1 y 31');
-      }
-    }
-
     return {
       isValid: errors.length === 0,
       errors
     };
+  }
+
+  // Phase 2: Automatización de Procesos
+
+  /**
+   * Cálculo automático de próximas fechas con soporte para reglas personalizadas
+   */
+  calculateAdvancedNextDueDate(startDate: string, intervalDays: number, executionDates?: number[]): string {
+    if (executionDates && executionDates.length > 0) {
+      return this.calculateNextDueDateForMultipleDates(executionDates);
+    }
+
+    // Para intervalos especiales como último día del mes
+    if (intervalDays === 30) {
+      return this.calculateMonthlyDueDate(startDate);
+    }
+
+    return this.calculateNextDueDate(startDate, intervalDays);
+  }
+
+  /**
+   * Calcular próxima fecha para múltiples fechas del mes
+   */
+  private calculateNextDueDateForMultipleDates(executionDates: number[]): string {
+    const today = new Date();
+    const currentDay = today.getDate();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    // Validar y ordenar fechas
+    const validDates = executionDates
+      .filter(day => day >= 1 && day <= 31)
+      .sort((a, b) => a - b);
+
+    // Buscar próxima fecha en el mes actual
+    for (const day of validDates) {
+      if (day > currentDay) {
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const adjustedDay = Math.min(day, daysInMonth);
+        return new Date(currentYear, currentMonth, adjustedDay).toISOString().split('T')[0];
+      }
+    }
+
+    // Si no hay fechas en el mes actual, usar la primera del próximo mes
+    const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+    const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+    const firstDay = validDates[0];
+    const daysInNextMonth = new Date(nextYear, nextMonth + 1, 0).getDate();
+    const adjustedDay = Math.min(firstDay, daysInNextMonth);
+
+    return new Date(nextYear, nextMonth, adjustedDay).toISOString().split('T')[0];
+  }
+
+  /**
+   * Calcular fecha mensual (último día del mes, etc.)
+   */
+  private calculateMonthlyDueDate(startDate: string): string {
+    const start = new Date(startDate);
+    const today = new Date();
+    const startDay = start.getDate();
+
+    let currentMonth = today.getMonth();
+    let currentYear = today.getFullYear();
+
+    // Si ya pasó el día en el mes actual, ir al siguiente mes
+    if (today.getDate() >= startDay) {
+      currentMonth++;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+    }
+
+    // Manejar el último día del mes
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const dayToUse = Math.min(startDay, daysInMonth);
+
+    return new Date(currentYear, currentMonth, dayToUse).toISOString().split('T')[0];
+  }
+
+  /**
+   * Gestión de gastos vencidos
+   */
+  async getOverdueExpenses(): Promise<OverdueExpense[]> {
+    try {
+      const pending = await databaseService.getPendingRecurringExpenses();
+      const today = new Date().toISOString().split('T')[0];
+      const overdueExpenses: OverdueExpense[] = [];
+
+      for (const pendingExpense of pending) {
+        if (pendingExpense.scheduledDate < today) {
+          const dueDate = new Date(pendingExpense.scheduledDate);
+          const todayDate = new Date(today);
+          const daysOverdue = Math.floor((todayDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+
+          overdueExpenses.push({
+            id: pendingExpense.id!,
+            recurringExpenseId: pendingExpense.recurringExpenseId,
+            description: pendingExpense.description,
+            amount: pendingExpense.amount,
+            category: pendingExpense.category,
+            dueDate: pendingExpense.scheduledDate,
+            daysOverdue,
+            priority: this.calculateOverduePriority(daysOverdue, pendingExpense.amount),
+          });
+        }
+      }
+
+      return overdueExpenses.sort((a, b) => b.daysOverdue - a.daysOverdue);
+    } catch (error) {
+      console.error('Error getting overdue expenses:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Marcar gasto vencido como pagado
+   */
+  async markOverdueAsPaid(overdueExpense: OverdueExpense, actualAmount?: number): Promise<boolean> {
+    try {
+      const expense: Omit<Expense, "id" | "createdAt" | "synced"> = {
+        amount: actualAmount || overdueExpense.amount,
+        description: overdueExpense.description,
+        category: overdueExpense.category,
+        date: new Date().toISOString().split('T')[0]
+      };
+
+      await databaseService.addExpense(expense);
+      await databaseService.deletePendingRecurringExpense(overdueExpense.id);
+
+      return true;
+    } catch (error) {
+      console.error('Error marking overdue as paid:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Ignorar gasto vencido
+   */
+  async ignoreOverdueExpense(overdueExpenseId: number): Promise<boolean> {
+    try {
+      await databaseService.deletePendingRecurringExpense(overdueExpenseId);
+      return true;
+    } catch (error) {
+      console.error('Error ignoring overdue expense:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Soporte para múltiples fechas por mes
+   */
+  validateMultipleDatesConfig(dates: number[]): MultipleDatesConfig {
+    const warnings: string[] = [];
+    const validDates = dates.filter(day => day >= 1 && day <= 31);
+
+    if (validDates.length !== dates.length) {
+      warnings.push('Algunos días están fuera del rango válido (1-31) y fueron eliminados');
+    }
+
+    const uniqueDates = [...new Set(validDates)];
+    if (uniqueDates.length !== validDates.length) {
+      warnings.push('Se eliminaron días duplicados');
+    }
+
+    const problemDays = uniqueDates.filter(day => day > 28);
+    if (problemDays.length > 0) {
+      warnings.push(`Los días ${problemDays.join(', ')} pueden no existir en todos los meses`);
+    }
+
+    return {
+      dates: uniqueDates.sort((a, b) => a - b),
+      isValid: uniqueDates.length > 0,
+      warnings
+    };
+  }
+
+  /**
+   * Generar gastos pendientes para múltiples fechas del mes
+   */
+  async generatePendingExpensesForMultipleDates(
+    recurring: RecurringExpense,
+    year: number,
+    month: number
+  ): Promise<void> {
+    try {
+      if (!recurring.executionDates) return;
+
+      let executionDates: number[];
+      try {
+        executionDates = typeof recurring.executionDates === 'string'
+          ? JSON.parse(recurring.executionDates)
+          : recurring.executionDates;
+      } catch {
+        return;
+      }
+
+      const config = this.validateMultipleDatesConfig(executionDates);
+      if (!config.isValid) return;
+
+      const today = new Date();
+      for (const day of config.dates) {
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const adjustedDay = Math.min(day, daysInMonth);
+        const date = new Date(year, month, adjustedDay);
+
+        if (date >= today) {
+          const scheduledDate = date.toISOString().split('T')[0];
+
+          // Verificar que no exista ya
+          const existing = await databaseService.getPendingRecurringExpenseByDate(
+            recurring.id!,
+            scheduledDate
+          );
+
+          if (!existing) {
+            await this.createPendingExpenseFromRecurring(recurring, scheduledDate);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error generating pending expenses for multiple dates:', error);
+    }
+  }
+
+  /**
+   * Calcular prioridad para gastos vencidos
+   */
+  private calculateOverduePriority(daysOverdue: number, amount: number): 'low' | 'medium' | 'high' | 'urgent' {
+    if (daysOverdue >= 7) return 'urgent';
+    if (daysOverdue >= 3) return 'high';
+    if (amount > 100000) return 'high';
+    return 'medium';
+  }
+
+  /**
+   * Procesar automáticamente todos los gastos recurrentes
+   */
+  async processAllRecurringExpenses(): Promise<void> {
+    try {
+      await this.checkAndCreatePendingExpenses();
+      console.log('Recurring expenses processed successfully');
+    } catch (error) {
+      console.error('Error processing recurring expenses:', error);
+    }
   }
 }
 

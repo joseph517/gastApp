@@ -43,7 +43,7 @@ export interface PeriodStats {
   expenseCount: number;
 }
 
-export type Period = 'week' | 'month' | 'year';
+export type Period = "week" | "month" | "year";
 
 export interface ExpenseFormData {
   amount: string;
@@ -61,7 +61,7 @@ export interface PremiumFeature {
 
 export interface UserPreferences {
   currency: string;
-  dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY';
+  dateFormat: "DD/MM/YYYY" | "MM/DD/YYYY";
   firstDayOfWeek: 0 | 1; // 0 = Sunday, 1 = Monday
   notifications: boolean;
   darkMode: boolean;
@@ -75,7 +75,7 @@ export interface NavigationProps {
 export interface Budget {
   id?: number;
   amount: number;
-  period: 'weekly' | 'monthly' | 'quarterly' | 'custom';
+  period: "weekly" | "monthly" | "quarterly" | "custom";
   startDate: string;
   endDate?: string;
   isActive: boolean;
@@ -88,7 +88,7 @@ export interface BudgetStatus {
   spent: number;
   remaining: number;
   percentage: number;
-  status: 'safe' | 'warning' | 'exceeded';
+  status: "safe" | "warning" | "exceeded";
   daysRemaining: number;
   totalDays: number;
   averageDailySpending: number;
@@ -102,7 +102,7 @@ export interface RecurringExpense {
   amount: number;
   description: string;
   category: string;
-  frequency: 'custom';
+  frequency: "custom";
   intervalDays: 7 | 15 | 30;
   startDate: string;
   endDate?: string;
@@ -123,7 +123,7 @@ export interface PendingRecurringExpense {
   amount: number;
   description: string;
   category: string;
-  status: 'pending' | 'confirmed' | 'skipped' | 'overdue';
+  status: "pending" | "confirmed" | "skipped" | "overdue";
   createdAt?: string;
 }
 
@@ -145,5 +145,29 @@ export interface RecurringExpenseStats {
   recurringByCategory: CategoryTotal[];
   manualByCategory: CategoryTotal[];
   monthlyRecurringProjection: number;
-  viewMode: 'separated' | 'combined' | 'recurring-only' | 'manual-only';
+  viewMode: "separated" | "combined" | "recurring-only" | "manual-only";
+}
+
+export interface OverdueExpense {
+  id: number;
+  recurringExpenseId: number;
+  description: string;
+  amount: number;
+  category: string;
+  dueDate: string;
+  daysOverdue: number;
+  priority: "low" | "medium" | "high" | "urgent";
+}
+
+export interface MultipleDatesConfig {
+  dates: number[]; // días del mes [1, 15, 30]
+  isValid: boolean;
+  warnings: string[];
+}
+
+export interface AutomationSettings {
+  enableAutomaticProcessing: boolean;
+  processingIntervalHours: number;
+  maxDaysToShowOverdue: number;
+  enableMultipleDatesPerMonth: boolean;
 }
