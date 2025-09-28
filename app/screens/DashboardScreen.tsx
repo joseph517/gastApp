@@ -98,21 +98,6 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           getPeriodLabel={getPeriodLabel}
         />
 
-        {isPremium && (
-          <BudgetOverview
-            onPress={() => {
-              // Navegar al tab de Statistics y directamente a Budget
-              const tabNavigator = navigation.getParent();
-              if (tabNavigator) {
-                tabNavigator.navigate("StatisticsTab", {
-                  screen: "Budget",
-                  initial: false,
-                });
-              }
-            }}
-          />
-        )}
-
         <RecentExpensesSection
           expenses={recentExpenses}
           onDeleteExpense={handleDeleteExpense}

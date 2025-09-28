@@ -44,6 +44,9 @@ const CalendarHeatMap = React.lazy(
 const WeeklySpendingChart = React.lazy(
   () => import("../components/analytics/WeeklySpendingChart")
 );
+const OverdueExpensesCard = React.lazy(
+  () => import("../components/analytics/OverdueExpensesCard")
+);
 
 interface AnalyticsScreenProps {
   navigation: any;
@@ -167,6 +170,11 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
         {/* Insights Automáticos */}
         <Suspense fallback={<LoadingCard height={150} />}>
           <InsightsSection insights={getBasicInsights()} />
+        </Suspense>
+
+        {/* Phase 2: Gastos Vencidos */}
+        <Suspense fallback={<LoadingCard height={200} />}>
+          <OverdueExpensesCard />
         </Suspense>
 
         {/* Predicción mensual */}

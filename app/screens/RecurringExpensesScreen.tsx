@@ -16,7 +16,6 @@ import { useExpenseStore } from "../store/expenseStore";
 import { SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from "../constants/colors";
 import { RecurringExpense, PendingRecurringExpense } from "../types";
 import { databaseService } from "../database/database";
-import { recurringExpenseService } from "../services/recurringExpenseService";
 
 interface RecurringExpensesScreenProps {
   navigation: any;
@@ -49,47 +48,17 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({ navig
 
   const loadData = useCallback(async () => {
     try {
-      console.log('Loading recurring expenses data...');
       setLoading(true);
 
-      // Intentar cargar datos normalmente
-      try {
-        // Verificar gastos pendientes primero
-        await recurringExpenseService.checkAndCreatePendingExpenses();
-        await recurringExpenseService.markOverdueExpenses();
+      // Cargar datos de forma simple - como era originalmente
+      const [recurring, pending] = await Promise.all([
+        databaseService.getRecurringExpenses(),
+        databaseService.getPendingRecurringExpenses()
+      ]);
 
-        // Cargar datos
-        const [recurring, pending] = await Promise.all([
-          databaseService.getRecurringExpenses(),
-          databaseService.getPendingRecurringExpenses()
-        ]);
+      setRecurringExpenses(recurring);
+      setPendingExpenses(pending);
 
-        setRecurringExpenses(recurring);
-        setPendingExpenses(pending);
-        console.log(`Loaded ${recurring.length} recurring expenses and ${pending.length} pending expenses`);
-      } catch (dataError: any) {
-        // Si hay error de tabla, intentar arreglar la estructura
-        if (dataError.message?.includes('template_name') || dataError.message?.includes('no such table')) {
-          console.log('Fixing table structure...');
-          const fixed = await databaseService.fixRecurringExpensesTable();
-
-          if (fixed) {
-            // Intentar cargar datos nuevamente después del fix
-            const [recurring, pending] = await Promise.all([
-              databaseService.getRecurringExpenses(),
-              databaseService.getPendingRecurringExpenses()
-            ]);
-
-            setRecurringExpenses(recurring);
-            setPendingExpenses(pending);
-            console.log(`After fix - Loaded ${recurring.length} recurring expenses and ${pending.length} pending expenses`);
-          } else {
-            throw new Error('No se pudo arreglar la estructura de la base de datos');
-          }
-        } else {
-          throw dataError;
-        }
-      }
     } catch (error) {
       console.error('Error loading recurring expenses:', error);
       Alert.alert('Error', 'No se pudieron cargar los gastos recurrentes');
