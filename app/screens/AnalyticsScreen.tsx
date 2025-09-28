@@ -6,14 +6,13 @@ import {
   RefreshControl,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAnalytics } from "../hooks/useAnalytics";
 import { useExpenseStore } from "../store/expenseStore";
 import LoadingCard from "../components/analytics/LoadingCard";
-import { SPACING, FONT_SIZES, BORDER_RADIUS } from "../constants/colors";
+import { SPACING, FONT_SIZES } from "../constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { CategoryTotal } from "../types";
 
