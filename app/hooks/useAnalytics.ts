@@ -1,7 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useExpenseStore } from "../store/expenseStore";
 import { Expense, Period, CategoryTotal } from "../types";
-import { getPeriodDateRange } from "../utils/dateUtils";
+import {
+  getPeriodDateRange,
+  getMondayBasedDayOfWeek,
+  getWeekRange,
+  DAY_NAMES_SHORT,
+  DAY_NAMES_FULL
+} from "../utils/dateUtils";
 import { InsightData } from "../components/analytics/InsightCard";
 import { CategoryChange } from "../components/analytics/CategoryChanges";
 import { CategoryFrequency } from "../components/analytics/FrequencyAnalysis";
@@ -252,10 +258,9 @@ export const useAnalytics = () => {
 
     // 1. Día de la semana más caro
     const dayTotals = new Map<number, number>();
-    const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
     recentExpenses.forEach(expense => {
-      const day = new Date(expense.date).getDay();
+      const day = getMondayBasedDayOfWeek(new Date(expense.date));
       const current = dayTotals.get(day) || 0;
       dayTotals.set(day, current + expense.amount);
     });
@@ -266,7 +271,7 @@ export const useAnalytics = () => {
 
       insights.push({
         title: 'Día más caro',
-        value: dayNames[mostExpensiveDay[0]],
+        value: DAY_NAMES_FULL[mostExpensiveDay[0]],
         subtitle: formatCurrency(mostExpensiveDay[1]),
         icon: 'calendar-outline',
         iconColor: '#FF6B6B'
@@ -632,14 +637,11 @@ export const useAnalytics = () => {
   const getWeeklySpendingData = useCallback((): { data: WeeklySpendingData[], insight: WeeklyInsight | null } => {
     if (expenses.length === 0) return { data: [], insight: null };
 
-    const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-    const fullDayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-
-    // Inicializar contadores para cada día de la semana
+    // Inicializar contadores para cada día de la semana (lunes a domingo)
     const weeklyData = Array.from({ length: 7 }, (_, index) => ({
       dayOfWeek: index,
-      dayName: dayNames[index],
-      fullDayName: fullDayNames[index],
+      dayName: DAY_NAMES_SHORT[index],
+      fullDayName: DAY_NAMES_FULL[index],
       totalAmount: 0,
       totalTransactions: 0,
       percentage: 0
@@ -647,7 +649,7 @@ export const useAnalytics = () => {
 
     // Agrupar gastos por día de la semana
     expenses.forEach(expense => {
-      const dayOfWeek = new Date(expense.date).getDay();
+      const dayOfWeek = getMondayBasedDayOfWeek(new Date(expense.date));
       weeklyData[dayOfWeek].totalAmount += expense.amount;
       weeklyData[dayOfWeek].totalTransactions += 1;
     });
@@ -696,21 +698,8 @@ export const useAnalytics = () => {
   const getWeeklyDataForWeek = useCallback((weekOffset: number): { data: WeeklySpendingData[], insight: WeeklyInsight | null } => {
     if (expenses.length === 0) return { data: [], insight: null };
 
-    const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-    const fullDayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-
-    // Calcular el rango de fechas para la semana específica
-    const now = new Date();
-    const currentWeekStart = new Date(now);
-    currentWeekStart.setDate(now.getDate() - now.getDay()); // Ir al domingo de esta semana
-    currentWeekStart.setHours(0, 0, 0, 0);
-
-    const targetWeekStart = new Date(currentWeekStart);
-    targetWeekStart.setDate(currentWeekStart.getDate() - (weekOffset * 7));
-
-    const targetWeekEnd = new Date(targetWeekStart);
-    targetWeekEnd.setDate(targetWeekStart.getDate() + 6);
-    targetWeekEnd.setHours(23, 59, 59, 999);
+    // Usar las funciones utilitarias para calcular el rango de la semana
+    const { start: targetWeekStart, end: targetWeekEnd } = getWeekRange(weekOffset);
 
     // Filtrar gastos de la semana específica
     const weekExpenses = expenses.filter(expense => {
@@ -718,11 +707,11 @@ export const useAnalytics = () => {
       return expenseDate >= targetWeekStart && expenseDate <= targetWeekEnd;
     });
 
-    // Inicializar contadores para cada día de la semana
+    // Inicializar contadores para cada día de la semana (lunes a domingo)
     const weeklyData = Array.from({ length: 7 }, (_, index) => ({
       dayOfWeek: index,
-      dayName: dayNames[index],
-      fullDayName: fullDayNames[index],
+      dayName: DAY_NAMES_SHORT[index],
+      fullDayName: DAY_NAMES_FULL[index],
       totalAmount: 0,
       totalTransactions: 0,
       percentage: 0
@@ -730,7 +719,7 @@ export const useAnalytics = () => {
 
     // Agrupar gastos por día de la semana
     weekExpenses.forEach(expense => {
-      const dayOfWeek = new Date(expense.date).getDay();
+      const dayOfWeek = getMondayBasedDayOfWeek(new Date(expense.date));
       weeklyData[dayOfWeek].totalAmount += expense.amount;
       weeklyData[dayOfWeek].totalTransactions += 1;
     });
