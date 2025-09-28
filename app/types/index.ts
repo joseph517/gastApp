@@ -95,3 +95,55 @@ export interface BudgetStatus {
   recommendedDailyLimit: number;
   projectedTotal: number;
 }
+
+// Gastos Recurrentes
+export interface RecurringExpense {
+  id?: number;
+  amount: number;
+  description: string;
+  category: string;
+  frequency: 'custom';
+  intervalDays: 7 | 15 | 30;
+  startDate: string;
+  endDate?: string;
+  nextDueDate: string;
+  isActive: boolean;
+  requiresConfirmation: boolean;
+  lastExecuted?: string;
+  executionDates: number[]; // Días del mes [1, 15]
+  notifyDaysBefore: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PendingRecurringExpense {
+  id?: number;
+  recurringExpenseId: number;
+  scheduledDate: string;
+  amount: number;
+  description: string;
+  category: string;
+  status: 'pending' | 'confirmed' | 'skipped' | 'overdue';
+  createdAt?: string;
+}
+
+export interface RecurringExpenseFormData {
+  amount: string;
+  description: string;
+  category: string;
+  intervalDays: 7 | 15 | 30;
+  startDate: Date;
+  endDate?: Date;
+  executionDates: number[];
+  notifyDaysBefore: number;
+}
+
+export interface RecurringExpenseStats {
+  totalRecurring: number;
+  totalManual: number;
+  totalCombined: number;
+  recurringByCategory: CategoryTotal[];
+  manualByCategory: CategoryTotal[];
+  monthlyRecurringProjection: number;
+  viewMode: 'separated' | 'combined' | 'recurring-only' | 'manual-only';
+}
