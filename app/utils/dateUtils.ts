@@ -12,15 +12,8 @@ export const getPeriodDateRange = (period: Period): DateRange => {
   switch (period) {
     case "week":
       // Semana calendario actual (lunes a domingo)
-      const day = now.getDay();
-      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-      startDate = new Date(now);
-      startDate.setDate(diff);
-      startDate.setHours(0, 0, 0, 0);
-
-      endDate = new Date(startDate);
-      endDate.setDate(startDate.getDate() + 6);
-      endDate.setHours(23, 59, 59, 999);
+      startDate = getWeekStart(now);
+      endDate = getWeekEnd(now);
       break;
 
     case "month":
@@ -61,3 +54,59 @@ export const formatDateForDisplay = (dateString: string): string => {
     year: "numeric",
   });
 };
+
+/**
+ * Obtiene el día de la semana donde lunes = 0, martes = 1, ..., domingo = 6
+ * En lugar del comportamiento por defecto de JavaScript donde domingo = 0
+ */
+export const getMondayBasedDayOfWeek = (date: Date): number => {
+  const jsDay = date.getDay(); // 0 = domingo, 1 = lunes, ..., 6 = sábado
+  return jsDay === 0 ? 6 : jsDay - 1; // Convertir a lunes = 0, ..., domingo = 6
+};
+
+/**
+ * Obtiene el inicio de la semana (lunes) para una fecha dada
+ */
+export const getWeekStart = (date: Date): Date => {
+  const dayOfWeek = getMondayBasedDayOfWeek(date);
+  const weekStart = new Date(date);
+  weekStart.setDate(date.getDate() - dayOfWeek);
+  weekStart.setHours(0, 0, 0, 0);
+  return weekStart;
+};
+
+/**
+ * Obtiene el final de la semana (domingo) para una fecha dada
+ */
+export const getWeekEnd = (date: Date): Date => {
+  const weekStart = getWeekStart(date);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+  return weekEnd;
+};
+
+/**
+ * Obtiene el rango de una semana específica basado en un offset desde la semana actual
+ * weekOffset: 0 = esta semana, 1 = semana pasada, -1 = próxima semana
+ */
+export const getWeekRange = (weekOffset: number = 0): { start: Date; end: Date } => {
+  const now = new Date();
+  const currentWeekStart = getWeekStart(now);
+
+  const targetWeekStart = new Date(currentWeekStart);
+  targetWeekStart.setDate(currentWeekStart.getDate() - (weekOffset * 7));
+
+  const targetWeekEnd = getWeekEnd(targetWeekStart);
+
+  return {
+    start: targetWeekStart,
+    end: targetWeekEnd
+  };
+};
+
+/**
+ * Nombres de días ordenados de lunes a domingo
+ */
+export const DAY_NAMES_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+export const DAY_NAMES_FULL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
