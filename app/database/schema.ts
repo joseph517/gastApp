@@ -75,6 +75,7 @@ export const CREATE_PENDING_RECURRING_EXPENSES_TABLE = `
   );
 `;
 
+
 export const CREATE_INDEXES = [
   "CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);",
   "CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category);",

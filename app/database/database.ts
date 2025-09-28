@@ -4,8 +4,6 @@ import {
   CREATE_CATEGORIES_TABLE,
   CREATE_SETTINGS_TABLE,
   CREATE_BUDGETS_TABLE,
-  CREATE_RECURRING_EXPENSES_TABLE,
-  CREATE_PENDING_RECURRING_EXPENSES_TABLE,
   CREATE_INDEXES,
   DEFAULT_SETTINGS,
 } from "./schema";
@@ -109,31 +107,27 @@ class DatabaseService {
   ): Promise<T> {
     await this.mutex.lock();
     try {
-      // Ensure we have a connection
+      // Ensure we have a connection - but avoid recursive init calls
       if (!this.initialized || !this.db) {
-        this.initialized = false;
-        this.db = null;
+        this.mutex.unlock();
         await this.init();
+        await this.mutex.lock();
       }
 
       if (!this.db) {
         throw new Error("Failed to establish database connection");
       }
 
-      // Test connection before use
+      // Test connection before use (simplified - no re-init to avoid deadlock)
       try {
         await this.db.getFirstAsync("SELECT 1");
       } catch (error) {
-        console.log(
-          `Database connection invalid for ${operationName}, reinitializing...`
+        console.warn(
+          `Database connection test failed for ${operationName}:`,
+          error
         );
-        this.initialized = false;
-        this.db = null;
-        await this.init();
-
-        if (!this.db) {
-          throw new Error("Failed to reestablish database connection");
-        }
+        // Don't reinitialize here to avoid potential deadlock
+        // Just continue and let the operation fail if needed
       }
 
       // Execute the operation
@@ -189,7 +183,6 @@ class DatabaseService {
         FOREIGN KEY (recurring_expense_id) REFERENCES recurring_expenses(id) ON DELETE CASCADE
       );
     `);
-
   }
 
   private async createIndexes(): Promise<void> {
@@ -297,26 +290,72 @@ class DatabaseService {
   }
 
   async importTestData(): Promise<void> {
-    return this.executeWithConnection(async (db) => {
+    try {
+      console.log("📋 Iniciando importación de datos de prueba...");
+
       // Importar datos de prueba desde archivo JSON
       const testExpenses = require("../data/testExpenses.json");
 
-      // Insertar cada gasto de prueba
-      for (const expense of testExpenses) {
-        await db.runAsync(
-          "INSERT OR IGNORE INTO expenses (amount, description, category, date, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)",
-          [expense.amount, expense.description, expense.category, expense.date]
-        );
+      if (!Array.isArray(testExpenses) || testExpenses.length === 0) {
+        console.warn("⚠️ No hay datos de prueba para importar");
+        return;
       }
 
-      console.log(`Importados ${testExpenses.length} gastos de prueba`);
+      console.log(`📦 Encontrados ${testExpenses.length} gastos para importar`);
 
-      // Verificar que se insertaron correctamente
-      const result = (await db.getFirstAsync(
-        "SELECT COUNT(*) as count FROM expenses"
-      )) as { count: number };
-      console.log(`Total de gastos en la base de datos: ${result.count}`);
-    }, "importTestData");
+      // Usar un enfoque más directo sin executeWithConnection para evitar deadlocks
+      await this.mutex.lock();
+
+      try {
+        if (!this.db) {
+          throw new Error("Database not initialized");
+        }
+
+        let importedCount = 0;
+
+        // Insertar en lotes pequeños para evitar bloqueos
+        for (let i = 0; i < testExpenses.length; i += 10) {
+          const batch = testExpenses.slice(i, i + 10);
+
+          for (const expense of batch) {
+            try {
+              await this.db.runAsync(
+                "INSERT OR IGNORE INTO expenses (amount, description, category, date, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)",
+                [
+                  expense.amount,
+                  expense.description,
+                  expense.category,
+                  expense.date,
+                ]
+              );
+              importedCount++;
+            } catch (expenseError) {
+              console.warn(
+                "⚠️ Error insertando gasto:",
+                expense.description,
+                expenseError
+              );
+            }
+          }
+
+          // Pequeña pausa entre lotes
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+
+        console.log(`✅ Importados ${importedCount} gastos de prueba`);
+
+        // Verificar que se insertaron correctamente
+        const result = (await this.db.getFirstAsync(
+          "SELECT COUNT(*) as count FROM expenses"
+        )) as { count: number };
+        console.log(`📊 Total de gastos en la base de datos: ${result.count}`);
+      } finally {
+        this.mutex.unlock();
+      }
+    } catch (error) {
+      console.error("❌ Error en importTestData:", error);
+      throw error;
+    }
   }
 
   // Expense operations
@@ -856,7 +895,70 @@ class DatabaseService {
     }, "deletePendingRecurringExpense");
   }
 
+  async getPendingRecurringExpenseByDate(
+    recurringExpenseId: number,
+    scheduledDate: string
+  ): Promise<PendingRecurringExpense | null> {
+    return this.executeWithConnection(async (db) => {
+      const result = await db.getFirstAsync(
+        `SELECT * FROM pending_recurring_expenses
+         WHERE recurring_expense_id = ? AND scheduled_date = ?`,
+        [recurringExpenseId, scheduledDate]
+      );
+
+      if (!result) return null;
+
+      return {
+        id: (result as any).id,
+        recurringExpenseId: (result as any).recurring_expense_id,
+        scheduledDate: (result as any).scheduled_date,
+        amount: (result as any).amount,
+        description: (result as any).description,
+        category: (result as any).category,
+        status: (result as any).status,
+        createdAt: (result as any).created_at,
+      };
+    }, "getPendingRecurringExpenseByDate");
+  }
+
+  async testConnection(): Promise<boolean> {
+    try {
+      if (!this.db) {
+        return false;
+      }
+
+      await this.db.getFirstAsync("SELECT 1");
+      return true;
+    } catch (error) {
+      console.error("Database connection test failed:", error);
+      return false;
+    }
+  }
+
   // Migration methods
+  async cleanupMalformedExecutionDates(): Promise<void> {
+    try {
+      if (!this.db || !this.initialized) {
+        console.warn("Database not ready for cleanup");
+        return;
+      }
+
+      // Limpiar datos mal formados en execution_dates de forma simple
+      await this.db.runAsync(`
+        UPDATE recurring_expenses
+        SET execution_dates = '[]'
+        WHERE execution_dates IS NULL
+           OR execution_dates = ''
+           OR execution_dates = 'null'
+           OR execution_dates = 'undefined'
+      `);
+
+      console.log("Cleaned up malformed execution_dates");
+    } catch (error) {
+      console.warn("Cleanup failed (safe to ignore):", error);
+    }
+  }
+
   async fixRecurringExpensesTable(): Promise<boolean> {
     return this.executeWithConnection(async (db) => {
       try {
@@ -936,6 +1038,33 @@ class DatabaseService {
         return false;
       }
     }, "fixRecurringExpensesTable");
+  }
+
+  // Phase 2: Métodos adicionales para automatización
+  async getPendingRecurringExpenseByDate(
+    recurringExpenseId: number,
+    scheduledDate: string
+  ): Promise<PendingRecurringExpense | null> {
+    return this.executeWithConnection(async (db) => {
+      const result = (await db.getFirstAsync(
+        `SELECT * FROM pending_recurring_expenses
+         WHERE recurring_expense_id = ? AND scheduled_date = ?`,
+        [recurringExpenseId, scheduledDate]
+      )) as any;
+
+      if (!result) return null;
+
+      return {
+        id: result.id,
+        recurringExpenseId: result.recurring_expense_id,
+        scheduledDate: result.scheduled_date,
+        amount: result.amount,
+        description: result.description,
+        category: result.category,
+        status: result.status,
+        createdAt: result.created_at,
+      };
+    }, "getPendingRecurringExpenseByDate");
   }
 }
 
