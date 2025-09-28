@@ -32,18 +32,41 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
   const insets = useSafeAreaInsets();
 
   const [amount, setAmount] = useState(budget?.amount?.toString() || "");
+  const [period, setPeriod] = useState<'weekly' | 'monthly' | 'quarterly' | 'custom'>(
+    budget?.period || 'monthly'
+  );
   const [startDate, setStartDate] = useState<Date>(
     budget?.startDate ? new Date(budget.startDate) : new Date()
   );
   const [endDate, setEndDate] = useState<Date>(
-    budget?.endDate ? new Date(budget.endDate) : getDefaultEndDate()
+    budget?.endDate ? new Date(budget.endDate) : getDefaultEndDate(budget?.period || 'monthly')
   );
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
-  function getDefaultEndDate() {
+  function getDefaultEndDate(periodType: string = 'monthly') {
     const date = new Date();
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0); // Último día del mes actual
+
+    switch (periodType) {
+      case 'weekly':
+        const weekEnd = new Date(date);
+        weekEnd.setDate(date.getDate() + (6 - date.getDay())); // Domingo
+        return weekEnd;
+
+      case 'quarterly':
+        const quarter = Math.floor(date.getMonth() / 3);
+        const quarterEndMonth = (quarter + 1) * 3 - 1;
+        return new Date(date.getFullYear(), quarterEndMonth + 1, 0);
+
+      case 'custom':
+        const customEnd = new Date(date);
+        customEnd.setMonth(date.getMonth() + 1);
+        return customEnd;
+
+      case 'monthly':
+      default:
+        return new Date(date.getFullYear(), date.getMonth() + 1, 0); // Último día del mes actual
+    }
   }
 
   const styles = createStyles(colors, insets);
@@ -56,6 +79,15 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
   const handleAmountChange = (text: string) => {
     const numericValue = text.replace(/[^0-9]/g, "");
     setAmount(numericValue);
+  };
+
+  const handlePeriodChange = (newPeriod: 'weekly' | 'monthly' | 'quarterly' | 'custom') => {
+    setPeriod(newPeriod);
+
+    // Auto-update end date based on new period unless it's custom
+    if (newPeriod !== 'custom') {
+      setEndDate(getDefaultEndDate(newPeriod));
+    }
   };
 
   const handleSave = () => {
@@ -73,6 +105,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
 
     const budgetData = {
       amount: numericAmount,
+      period: period,
       startDate: startDate.toISOString().split('T')[0],
       endDate: endDate.toISOString().split('T')[0],
     };
@@ -136,6 +169,47 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
           </Text>
         </View>
 
+        {/* Period Selection */}
+        <View style={styles.inputGroup}>
+          <Text style={[styles.label, { color: colors.textPrimary }]}>Tipo de Período</Text>
+          <View style={styles.periodOptions}>
+            {[
+              { key: 'weekly', label: 'Semanal', icon: 'calendar-outline' },
+              { key: 'monthly', label: 'Mensual', icon: 'calendar' },
+              { key: 'quarterly', label: 'Trimestral', icon: 'calendar-sharp' },
+              { key: 'custom', label: 'Personalizado', icon: 'create-outline' }
+            ].map((option) => (
+              <TouchableOpacity
+                key={option.key}
+                style={[
+                  styles.periodOption,
+                  { backgroundColor: colors.surface },
+                  period === option.key && { backgroundColor: colors.primary }
+                ]}
+                onPress={() => handlePeriodChange(option.key as any)}
+              >
+                <Ionicons
+                  name={option.icon as any}
+                  size={20}
+                  color={period === option.key ? colors.background : colors.primary}
+                />
+                <Text style={[
+                  styles.periodOptionText,
+                  { color: period === option.key ? colors.background : colors.textPrimary }
+                ]}>
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+            {period === 'weekly' && 'Presupuesto para una semana (Lun-Dom)'}
+            {period === 'monthly' && 'Presupuesto mensual (por defecto)'}
+            {period === 'quarterly' && 'Presupuesto trimestral (3 meses)'}
+            {period === 'custom' && 'Define fechas personalizadas'}
+          </Text>
+        </View>
+
         {/* Date Range */}
         <View style={styles.dateSection}>
           <Text style={styles.sectionTitle}>Período del Presupuesto</Text>
@@ -163,14 +237,24 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.dateButton, { backgroundColor: colors.surface }]}
-            onPress={() => setShowEndDatePicker(true)}
+            style={[
+              styles.dateButton,
+              { backgroundColor: colors.surface },
+              period !== 'custom' && { opacity: 0.6 }
+            ]}
+            onPress={() => period === 'custom' && setShowEndDatePicker(true)}
+            disabled={period !== 'custom'}
           >
             <View style={styles.dateButtonContent}>
-              <Ionicons name="calendar" size={20} color={colors.primary} />
+              <Ionicons
+                name="calendar"
+                size={20}
+                color={period === 'custom' ? colors.primary : colors.textSecondary}
+              />
               <View style={styles.dateButtonText}>
                 <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>
                   Fecha de fin
+                  {period !== 'custom' && ' (automática)'}
                 </Text>
                 <Text style={[styles.dateValue, { color: colors.textPrimary }]}>
                   {endDate.toLocaleDateString("es-CO", {
@@ -181,7 +265,11 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
                 </Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+            <Ionicons
+              name={period === 'custom' ? 'chevron-forward' : 'lock-closed'}
+              size={20}
+              color={colors.textSecondary}
+            />
           </TouchableOpacity>
         </View>
 
@@ -289,6 +377,25 @@ const createStyles = (colors: any, insets: { top: number }) =>
       fontSize: FONT_SIZES.sm,
       marginTop: SPACING.xs,
       fontStyle: "italic",
+    },
+    periodOptions: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: SPACING.sm,
+      marginBottom: SPACING.xs,
+    },
+    periodOption: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      borderRadius: BORDER_RADIUS.lg,
+      minWidth: "45%",
+    },
+    periodOptionText: {
+      fontSize: FONT_SIZES.sm,
+      fontWeight: "500",
+      marginLeft: SPACING.xs,
     },
     dateSection: {
       marginBottom: SPACING.xl,

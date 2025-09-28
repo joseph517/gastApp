@@ -75,7 +75,7 @@ export interface NavigationProps {
 export interface Budget {
   id?: number;
   amount: number;
-  period: 'monthly';
+  period: 'weekly' | 'monthly' | 'quarterly' | 'custom';
   startDate: string;
   endDate?: string;
   isActive: boolean;
