@@ -38,10 +38,17 @@ const PremiumSection: React.FC<PremiumSectionProps> = ({
           key={feature.id}
           title={feature.title}
           description={feature.description}
-          disabled={!isPremium && feature.id !== "advanced-analytics" && feature.id !== "budget-tracking"}
+          disabled={!isPremium && feature.id !== "advanced-analytics" && feature.id !== "budget-tracking" && feature.id !== "recurring-expenses"}
           onPress={
             feature.id === "advanced-analytics" ? () => navigation?.navigate('Analytics') :
             feature.id === "budget-tracking" ? () => navigation?.navigate('Budget') :
+            feature.id === "recurring-expenses" ? () => {
+              if (isPremium) {
+                navigation?.navigate('RecurringExpenses');
+              } else {
+                onUpgradePress?.();
+              }
+            } :
             undefined
           }
         />

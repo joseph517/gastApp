@@ -13,6 +13,8 @@ import StatisticsScreen from "../screens/StatisticsScreen";
 import AnalyticsScreen from "../screens/AnalyticsScreen";
 import BudgetScreen from "../screens/BudgetScreen";
 import SettingsScreen from "../screens/SettingsScreen";
+import RecurringExpensesScreen from "../screens/RecurringExpensesScreen";
+import AddRecurringExpenseScreen from "../screens/AddRecurringExpenseScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -38,6 +40,8 @@ const StatisticsStack = () => (
     <Stack.Screen name="Statistics" component={StatisticsScreen} />
     <Stack.Screen name="Analytics" component={AnalyticsScreen} />
     <Stack.Screen name="Budget" component={BudgetScreen} />
+    <Stack.Screen name="RecurringExpenses" component={RecurringExpensesScreen} />
+    <Stack.Screen name="AddRecurringExpense" component={AddRecurringExpenseScreen} />
   </Stack.Navigator>
 );
 
