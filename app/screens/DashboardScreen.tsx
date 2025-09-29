@@ -9,27 +9,23 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme, ThemeColors } from "../contexts/ThemeContext";
 import { useDashboard } from "../hooks/useDashboard";
-import { useExpenseStore } from "../store/expenseStore";
 import { useRecurringExpenseProcessor } from "../hooks/useRecurringExpenseProcessor";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import PeriodStatsCard from "../components/dashboard/PeriodStatsCard";
-import BudgetOverview from "../components/dashboard/BudgetOverview";
-import ChartSection from "../components/dashboard/ChartSection";
 import RecentExpensesSection from "../components/dashboard/RecentExpensesSection";
 import { DashboardScreenProps } from "../types/dashboard";
+import { useToast } from "app/contexts/ToastContext";
 
 const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = createStyles(colors, insets);
-  const { isPremium } = useExpenseStore();
 
   // Activar procesamiento de gastos recurrentes en background
   useRecurringExpenseProcessor();
 
   const {
     selectedPeriod,
-    categoryTotals,
     periodStats,
     recentExpenses,
     loading,
@@ -41,25 +37,17 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     getPeriodLabel,
   } = useDashboard();
 
+  const { showToast } = useToast();
+
   const handleDeleteExpense = (expenseId: number) => {
-    Alert.alert(
-      "Eliminar Gasto",
-      "¿Estás seguro de que deseas eliminar este gasto?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Eliminar",
-          style: "destructive",
-          onPress: () => deleteExpense(expenseId),
-        },
-      ]
-    );
+    showToast("Gasto eliminado", "success");
+    deleteExpense(expenseId);
   };
 
   const handleImportTestData = async () => {
     Alert.alert(
       "Importar Datos de Prueba",
-      "¿Quieres importar 53 gastos de prueba de agosto y septiembre?",
+      "Estas seguro de importar los datos de prueba?",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -68,15 +56,9 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           onPress: async () => {
             const success = await importTestData();
             if (success) {
-              Alert.alert(
-                "Éxito",
-                "Los datos de prueba han sido importados correctamente"
-              );
+              showToast("Datos de prueba importados", "success");
             } else {
-              Alert.alert(
-                "Error",
-                "No se pudieron importar los datos de prueba"
-              );
+              showToast("Error al importar datos de prueba", "error");
             }
           },
         },
