@@ -2,7 +2,12 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../contexts/ThemeContext";
-import { SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from "../../constants/colors";
+import {
+  SPACING,
+  FONT_SIZES,
+  BORDER_RADIUS,
+  SHADOWS,
+} from "../../constants/colors";
 
 export interface InsightData {
   title: string;
@@ -10,7 +15,7 @@ export interface InsightData {
   subtitle?: string;
   icon: keyof typeof Ionicons.glyphMap;
   iconColor?: string;
-  trend?: 'up' | 'down' | 'neutral';
+  trend?: "up" | "down" | "neutral";
   trendValue?: string;
 }
 
@@ -23,12 +28,12 @@ const InsightCard: React.FC<InsightCardProps> = React.memo(({ insight }) => {
 
   const getTrendIcon = () => {
     switch (insight.trend) {
-      case 'up':
-        return 'trending-up';
-      case 'down':
-        return 'trending-down';
-      case 'neutral':
-        return 'remove';
+      case "up":
+        return "trending-up";
+      case "down":
+        return "trending-down";
+      case "neutral":
+        return "remove";
       default:
         return null;
     }
@@ -36,11 +41,11 @@ const InsightCard: React.FC<InsightCardProps> = React.memo(({ insight }) => {
 
   const getTrendColor = () => {
     switch (insight.trend) {
-      case 'up':
+      case "up":
         return colors.error;
-      case 'down':
+      case "down":
         return colors.success;
-      case 'neutral':
+      case "neutral":
         return colors.textSecondary;
       default:
         return colors.textSecondary;
@@ -48,9 +53,16 @@ const InsightCard: React.FC<InsightCardProps> = React.memo(({ insight }) => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.cardBackground }]}>
+    <View
+      style={[styles.container, { backgroundColor: colors.cardBackground }]}
+    >
       <View style={styles.header}>
-        <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+        <View
+          style={[
+            styles.iconContainer,
+            { backgroundColor: colors.primary + "20" },
+          ]}
+        >
           <Ionicons
             name={insight.icon}
             size={20}
@@ -99,44 +111,44 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: SPACING.sm,
   },
   iconContainer: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   trendContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   trendText: {
     fontSize: FONT_SIZES.xs,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: 2,
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   title: {
     fontSize: FONT_SIZES.sm,
-    fontWeight: '500',
+    fontWeight: "500",
     marginBottom: 4,
   },
   value: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 2,
   },
   subtitle: {
     fontSize: FONT_SIZES.xs,
-    fontWeight: '400',
+    fontWeight: "400",
   },
 });
 

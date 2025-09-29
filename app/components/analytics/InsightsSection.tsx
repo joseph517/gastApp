@@ -9,36 +9,35 @@ interface InsightsSectionProps {
   title?: string;
 }
 
-const InsightsSection: React.FC<InsightsSectionProps> = React.memo(({
-  insights,
-  title = "Insights Automáticos"
-}) => {
-  const { colors } = useTheme();
+const InsightsSection: React.FC<InsightsSectionProps> = React.memo(
+  ({ insights, title = "Insights Automáticos" }) => {
+    const { colors } = useTheme();
 
-  if (insights.length === 0) {
-    return null;
+    if (insights.length === 0) {
+      return null;
+    }
+
+    return (
+      <View style={styles.container}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>
+          {title}
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          style={styles.scrollView}
+        >
+          {insights.map((insight, index) => (
+            <View key={index} style={styles.cardContainer}>
+              <InsightCard insight={insight} />
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    );
   }
-
-  return (
-    <View style={styles.container}>
-      <Text style={[styles.title, { color: colors.textPrimary }]}>
-        {title}
-      </Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        style={styles.scrollView}
-      >
-        {insights.map((insight, index) => (
-          <View key={index} style={styles.cardContainer}>
-            <InsightCard insight={insight} />
-          </View>
-        ))}
-      </ScrollView>
-    </View>
-  );
-});
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -47,7 +46,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: SPACING.sm,
   },
   scrollView: {

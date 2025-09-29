@@ -1,27 +1,15 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useExpenseStore } from "../store/expenseStore";
 import { useTheme, ThemeColors } from "../contexts/ThemeContext";
-import {
-  SPACING,
-  FONT_SIZES,
-  BORDER_RADIUS,
-  SHADOWS,
-} from "../constants/colors";
+import { SPACING, FONT_SIZES } from "../constants/colors";
 import { useStatistics } from "../hooks/useStatistics";
 import StatsCard from "../components/statistics/StatsCard";
 import ChartCard from "../components/statistics/ChartCard";
 import PremiumSection from "../components/statistics/PremiumSection";
 import PremiumUpgradeModal from "../components/PremiumUpgradeModal";
 import { StatisticsScreenProps } from "../types/statistics";
-import { Ionicons } from "@expo/vector-icons";
 
 const StatisticsScreen: React.FC<StatisticsScreenProps> = ({ navigation }) => {
   const { colors } = useTheme();
