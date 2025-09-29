@@ -16,6 +16,7 @@ import {
   BORDER_RADIUS,
   SHADOWS,
 } from "../../constants/colors";
+import { parseLocalDate } from "../../utils/dateUtils";
 
 export interface ExpenseDetail {
   id: string;
@@ -339,7 +340,7 @@ const CalendarHeatMap: React.FC<CalendarHeatMapProps> = React.memo(
                   <Text
                     style={[styles.tooltipDate, { color: colors.textPrimary }]}
                   >
-                    {new Date(selectedDay.date).toLocaleDateString("es-CO", {
+                    {parseLocalDate(selectedDay.date).toLocaleDateString("es-CO", {
                       weekday: "long",
                       day: "numeric",
                       month: "long",
