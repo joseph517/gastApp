@@ -634,67 +634,6 @@ export const useAnalytics = () => {
     return heatMapData;
   }, [expenses]);
 
-  // Calcular patrones de gasto por día de la semana
-  const getWeeklySpendingData = useCallback((): { data: WeeklySpendingData[], insight: WeeklyInsight | null } => {
-    if (expenses.length === 0) return { data: [], insight: null };
-
-    // Inicializar contadores para cada día de la semana (lunes a domingo)
-    const weeklyData = Array.from({ length: 7 }, (_, index) => ({
-      dayOfWeek: index,
-      dayName: DAY_NAMES_SHORT[index],
-      fullDayName: DAY_NAMES_FULL[index],
-      totalAmount: 0,
-      totalTransactions: 0,
-      percentage: 0
-    }));
-
-    // Agrupar gastos por día de la semana
-    expenses.forEach(expense => {
-      const dayOfWeek = getMondayBasedDayOfWeek(parseLocalDate(expense.date));
-      weeklyData[dayOfWeek].totalAmount += expense.amount;
-      weeklyData[dayOfWeek].totalTransactions += 1;
-    });
-
-    // Encontrar el máximo para calcular porcentajes
-    const maxAmount = Math.max(...weeklyData.map(d => d.totalAmount));
-
-    weeklyData.forEach(day => {
-      day.percentage = maxAmount > 0 ? (day.totalAmount / maxAmount) * 100 : 0;
-    });
-
-    // Filtrar días con datos y crear resultado final
-    const validData = weeklyData
-      .filter(day => day.totalTransactions > 0)
-      .map(day => ({
-        dayOfWeek: day.dayOfWeek,
-        dayName: day.dayName,
-        totalAmount: day.totalAmount,
-        totalTransactions: day.totalTransactions,
-        percentage: day.percentage
-      }));
-
-    // Generar insight
-    let insight: WeeklyInsight | null = null;
-    if (validData.length >= 2) {
-      const sortedByAmount = [...validData].sort((a, b) => b.totalAmount - a.totalAmount);
-      const highest = sortedByAmount[0];
-      const lowest = sortedByAmount[sortedByAmount.length - 1];
-
-      if (highest.totalAmount > lowest.totalAmount) {
-        const percentageDiff = ((highest.totalAmount - lowest.totalAmount) / lowest.totalAmount) * 100;
-
-        insight = {
-          highestDay: highest.dayName,
-          lowestDay: lowest.dayName,
-          percentageDifference: percentageDiff,
-          insight: `Gastas ${percentageDiff.toFixed(1)}% más los ${weeklyData[highest.dayOfWeek].fullDayName.toLowerCase()} que los ${weeklyData[lowest.dayOfWeek].fullDayName.toLowerCase()}`
-        };
-      }
-    }
-
-    return { data: validData, insight };
-  }, [expenses]);
-
   // Calcular patrones de gasto por día de la semana para una semana específica
   const getWeeklyDataForWeek = useCallback((weekOffset: number): { data: WeeklySpendingData[], insight: WeeklyInsight | null } => {
     if (expenses.length === 0) return { data: [], insight: null };
@@ -704,7 +643,7 @@ export const useAnalytics = () => {
 
     // Filtrar gastos de la semana específica
     const weekExpenses = expenses.filter(expense => {
-      const expenseDate = new Date(expense.date);
+      const expenseDate = parseLocalDate(expense.date);
       return expenseDate >= targetWeekStart && expenseDate <= targetWeekEnd;
     });
 
@@ -767,6 +706,12 @@ export const useAnalytics = () => {
 
     return { data: validData, insight };
   }, [expenses]);
+
+  // Calcular patrones de gasto por día de la semana (usa semana actual por defecto)
+  const getWeeklySpendingData = useCallback((): { data: WeeklySpendingData[], insight: WeeklyInsight | null } => {
+    // Reutilizar la lógica de getWeeklyDataForWeek con weekOffset = 0 (semana actual)
+    return getWeeklyDataForWeek(0);
+  }, [getWeeklyDataForWeek]);
 
 
   return {
