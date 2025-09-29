@@ -110,3 +110,20 @@ export const getWeekRange = (weekOffset: number = 0): { start: Date; end: Date }
  */
 export const DAY_NAMES_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 export const DAY_NAMES_FULL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+/**
+ * Parsea una fecha en formato ISO string para crear un objeto Date en hora local
+ * Evita problemas de zona horaria que hacen que las fechas se muestren un día anterior
+ * @param dateString - Fecha en formato ISO (ej: "2024-03-15" o "2024-03-15T10:30:00.000Z")
+ * @returns Date object en hora local
+ */
+export const parseLocalDate = (dateString: string): Date => {
+  // Si la fecha ya incluye información de hora, extraer solo la parte de la fecha
+  const dateOnly = dateString.split('T')[0];
+
+  // Separar año, mes y día
+  const [year, month, day] = dateOnly.split('-').map(Number);
+
+  // Crear fecha local (mes - 1 porque los meses en JS van de 0 a 11)
+  return new Date(year, month - 1, day);
+};
