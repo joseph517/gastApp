@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useExpenseStore } from "../store/expenseStore";
 import { Period, CategoryTotal } from "../types";
 import { getPeriodDateRange } from "../utils/dateUtils";
+import { recurringExpenseService } from "../services/recurringExpenseService";
 
 export interface DashboardStats {
   total: number;
@@ -63,6 +64,14 @@ export const useDashboard = () => {
   };
 
   const handleRefresh = async () => {
+    // Procesar gastos recurrentes antes de recargar datos
+    try {
+      await recurringExpenseService.processAllRecurringExpenses();
+    } catch (error) {
+      console.error('Error processing recurring expenses on refresh:', error);
+      // No bloquear el refresh si falla el procesamiento
+    }
+
     await getExpenses();
     await loadDashboardData();
   };

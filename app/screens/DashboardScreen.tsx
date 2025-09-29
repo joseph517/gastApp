@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme, ThemeColors } from "../contexts/ThemeContext";
 import { useDashboard } from "../hooks/useDashboard";
 import { useExpenseStore } from "../store/expenseStore";
+import { useRecurringExpenseProcessor } from "../hooks/useRecurringExpenseProcessor";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import PeriodStatsCard from "../components/dashboard/PeriodStatsCard";
 import BudgetOverview from "../components/dashboard/BudgetOverview";
@@ -22,6 +23,9 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const styles = createStyles(colors, insets);
   const { isPremium } = useExpenseStore();
+
+  // Activar procesamiento de gastos recurrentes en background
+  useRecurringExpenseProcessor();
 
   const {
     selectedPeriod,
