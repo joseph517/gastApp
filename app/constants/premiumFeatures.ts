@@ -56,15 +56,6 @@ export const PREMIUM_FEATURES: PremiumFeature[] = [
     isPremium: true,
     screen: "RecurringExpenses",
   },
-  {
-    id: "multi-currency",
-    title: "Multi-Moneda",
-    description: "Soporte para múltiples monedas con conversión automática",
-    icon: "💱",
-    isImplemented: false,
-    isPremium: true,
-    comingSoonMessage: "Soporte multi-moneda - Próximamente",
-  },
 ];
 
 export const getFeatureConfig = (featureId: string): PremiumFeature | null => {
