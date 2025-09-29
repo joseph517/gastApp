@@ -4,22 +4,21 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme, ThemeColors } from "../../contexts/ThemeContext";
 import { SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from "../../constants/colors";
 import PremiumBadge from "../PremiumBadge";
-import { PremiumFeature } from "../../types/statistics";
+import { getAllFeatures } from "../../constants/featureConfig";
+import { useFeatureAccess } from "../../hooks/useFeatureAccess";
 
 interface PremiumSectionProps {
-  features: PremiumFeature[];
-  isPremium: boolean;
   onUpgradePress?: () => void;
   navigation?: any;
 }
 
 const PremiumSection: React.FC<PremiumSectionProps> = ({
-  features,
-  isPremium,
   onUpgradePress,
   navigation
 }) => {
   const { colors } = useTheme();
+  const { isPremium } = useFeatureAccess();
+  const features = getAllFeatures();
   const styles = createStyles(colors);
 
   return (
@@ -36,21 +35,11 @@ const PremiumSection: React.FC<PremiumSectionProps> = ({
       {features.map((feature) => (
         <PremiumBadge
           key={feature.id}
+          featureId={feature.id}
           title={feature.title}
           description={feature.description}
-          disabled={!isPremium && feature.id !== "advanced-analytics" && feature.id !== "budget-tracking" && feature.id !== "recurring-expenses"}
-          onPress={
-            feature.id === "advanced-analytics" ? () => navigation?.navigate('Analytics') :
-            feature.id === "budget-tracking" ? () => navigation?.navigate('Budget') :
-            feature.id === "recurring-expenses" ? () => {
-              if (isPremium) {
-                navigation?.navigate('RecurringExpenses');
-              } else {
-                onUpgradePress?.();
-              }
-            } :
-            undefined
-          }
+          navigation={navigation}
+          onUpgradePress={onUpgradePress}
         />
       ))}
 

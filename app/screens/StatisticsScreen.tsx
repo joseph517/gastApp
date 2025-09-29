@@ -20,7 +20,6 @@ import StatsCard from "../components/statistics/StatsCard";
 import ChartCard from "../components/statistics/ChartCard";
 import PremiumSection from "../components/statistics/PremiumSection";
 import PremiumUpgradeModal from "../components/PremiumUpgradeModal";
-import { PREMIUM_FEATURES } from "../constants/premiumFeatures";
 import { StatisticsScreenProps } from "../types/statistics";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -60,8 +59,6 @@ const StatisticsScreen: React.FC<StatisticsScreenProps> = ({ navigation }) => {
         <ChartCard data={monthlyTotals} />
 
         <PremiumSection
-          features={PREMIUM_FEATURES}
-          isPremium={isPremium}
           onUpgradePress={handleUpgradePress}
           navigation={navigation}
         />
