@@ -5,6 +5,10 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -16,7 +20,12 @@
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       },
-      "package": "com.yourcompany.gastapp"
+      "package": "com.yourcompany.gastapp",
+      "versionCode": 1,
+      "permissions": [
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "bundler": "metro"
@@ -24,6 +33,12 @@
     "plugins": [
       "expo-sqlite"
     ],
-    "sdkVersion": "54.0.0"
+    "sdkVersion": "54.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "e35b61e4-e7a1-4977-9b4a-f5a93e0a5c84"
+      }
+    },
+    "owner": "joseph517"
   }
 }
