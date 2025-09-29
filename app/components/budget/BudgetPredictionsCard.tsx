@@ -17,14 +17,51 @@ import {
   SHADOWS,
 } from "../../constants/colors";
 
+// Constants
+const PREDICTION_THRESHOLDS = {
+  CONFIDENCE: {
+    HIGH_CHANGE_PERCENT: 20,
+    MEDIUM_CHANGE_PERCENT: 40,
+    HIGH_DAY_THRESHOLD: 15,
+    MEDIUM_DAY_THRESHOLD: 7,
+  },
+  CATEGORY: {
+    HIGH_CONCENTRATION: 40,
+  },
+  BUDGET: {
+    ALERT_THRESHOLD: 1.05,
+  },
+  WEEKLY: {
+    PREDICTION_DAMPENING: 0.5,
+  },
+} as const;
+
+const CONFIDENCE_LABELS = {
+  high: "Alta",
+  medium: "Media",
+  low: "Baja",
+} as const;
+
+const DAY_NAMES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"] as const;
+
+// Types
+type Trend = "up" | "down" | "stable";
+type Confidence = "high" | "medium" | "low";
+
+interface Expense {
+  date: string;
+  amount: number;
+  category: string;
+}
+
 interface SpendingPrediction {
   type: "weekly" | "monthly" | "category";
   title: string;
   description: string;
   predictedAmount: number;
-  confidence: "high" | "medium" | "low";
+  confidence: Confidence;
   icon: string;
-  trend: "up" | "down" | "stable";
+  trend: Trend;
   recommendation?: string;
 }
 
@@ -32,6 +69,73 @@ interface BudgetPredictionsCardProps {
   budgetStatus?: BudgetStatus | null;
   onViewDetails?: () => void;
 }
+
+// Utility functions
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+const calculateTotal = (expenses: Expense[]): number => {
+  return expenses.reduce((acc, exp) => acc + exp.amount, 0);
+};
+
+const determineTrend = (current: number, previous: number): Trend => {
+  if (current > previous) return "up";
+  if (current < previous) return "down";
+  return "stable";
+};
+
+const getConfidenceLevelByChange = (changePercent: number): Confidence => {
+  const absChange = Math.abs(changePercent);
+  if (absChange < PREDICTION_THRESHOLDS.CONFIDENCE.HIGH_CHANGE_PERCENT)
+    return "high";
+  if (absChange < PREDICTION_THRESHOLDS.CONFIDENCE.MEDIUM_CHANGE_PERCENT)
+    return "medium";
+  return "low";
+};
+
+const getConfidenceLevelByDay = (currentDay: number): Confidence => {
+  if (currentDay > PREDICTION_THRESHOLDS.CONFIDENCE.HIGH_DAY_THRESHOLD)
+    return "high";
+  if (currentDay > PREDICTION_THRESHOLDS.CONFIDENCE.MEDIUM_DAY_THRESHOLD)
+    return "medium";
+  return "low";
+};
+
+const getTrendRecommendation = (trend: Trend): string => {
+  switch (trend) {
+    case "up":
+      return "Considera revisar tus gastos recurrentes";
+    case "down":
+      return "Mantén el buen control de gastos";
+    case "stable":
+      return "Gastos estables, sigue así";
+  }
+};
+
+const filterExpensesByDateRange = (
+  expenses: Expense[],
+  startDate: Date,
+  endDate?: Date
+): Expense[] => {
+  return expenses.filter((expense) => {
+    const expenseDate = new Date(expense.date);
+    if (endDate) {
+      return expenseDate >= startDate && expenseDate < endDate;
+    }
+    return expenseDate >= startDate;
+  });
+};
+
+const getDateDaysAgo = (days: number): Date => {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date;
+};
 
 const BudgetPredictionsCard: React.FC<BudgetPredictionsCardProps> = ({
   budgetStatus,
@@ -103,41 +207,23 @@ const BudgetPredictionsCard: React.FC<BudgetPredictionsCardProps> = ({
   };
 
   const calculateWeeklyPrediction = (
-    expenses: any[]
+    expenses: Expense[]
   ): SpendingPrediction | null => {
-    const lastWeekExpenses = expenses.filter((expense) => {
-      const expenseDate = new Date(expense.date);
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return expenseDate >= weekAgo;
-    });
-
-    const previousWeekExpenses = expenses.filter((expense) => {
-      const expenseDate = new Date(expense.date);
-      const twoWeeksAgo = new Date();
-      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return expenseDate >= twoWeeksAgo && expenseDate < weekAgo;
-    });
+    const lastWeekExpenses = filterExpensesByDateRange(
+      expenses,
+      getDateDaysAgo(7)
+    );
+    const previousWeekExpenses = filterExpensesByDateRange(
+      expenses,
+      getDateDaysAgo(14),
+      getDateDaysAgo(7)
+    );
 
     if (lastWeekExpenses.length === 0) return null;
 
-    const lastWeekTotal = lastWeekExpenses.reduce(
-      (acc, exp) => acc + exp.amount,
-      0
-    );
-    const previousWeekTotal = previousWeekExpenses.reduce(
-      (acc, exp) => acc + exp.amount,
-      0
-    );
-
-    const trend =
-      lastWeekTotal > previousWeekTotal
-        ? "up"
-        : lastWeekTotal < previousWeekTotal
-        ? "down"
-        : "stable";
+    const lastWeekTotal = calculateTotal(lastWeekExpenses);
+    const previousWeekTotal = calculateTotal(previousWeekExpenses);
+    const trend = determineTrend(lastWeekTotal, previousWeekTotal);
 
     const changePercent =
       previousWeekTotal > 0
@@ -145,35 +231,30 @@ const BudgetPredictionsCard: React.FC<BudgetPredictionsCardProps> = ({
         : 0;
 
     const nextWeekPrediction =
-      lastWeekTotal + lastWeekTotal * (changePercent / 100) * 0.5;
+      lastWeekTotal +
+      lastWeekTotal *
+        (changePercent / 100) *
+        PREDICTION_THRESHOLDS.WEEKLY.PREDICTION_DAMPENING;
 
     return {
       type: "weekly",
       title: "Próxima Semana",
       description: `Gasto previsto: ${formatCurrency(nextWeekPrediction)}`,
       predictedAmount: nextWeekPrediction,
-      confidence:
-        Math.abs(changePercent) < 20
-          ? "high"
-          : Math.abs(changePercent) < 40
-          ? "medium"
-          : "low",
+      confidence: getConfidenceLevelByChange(changePercent),
       icon: "calendar-outline",
       trend,
-      recommendation:
-        trend === "up"
-          ? "Considera revisar tus gastos recurrentes"
-          : trend === "down"
-          ? "Mantén el buen control de gastos"
-          : "Gastos estables, sigue así",
+      recommendation: getTrendRecommendation(trend),
     };
   };
 
   const calculateMonthlyPrediction = (
-    expenses: any[]
+    expenses: Expense[]
   ): SpendingPrediction | null => {
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const currentDay = now.getDate();
 
     const currentMonthExpenses = expenses.filter((expense) => {
       const expenseDate = new Date(expense.date);
@@ -195,120 +276,115 @@ const BudgetPredictionsCard: React.FC<BudgetPredictionsCardProps> = ({
 
     if (currentMonthExpenses.length === 0) return null;
 
-    const currentMonthTotal = currentMonthExpenses.reduce(
-      (acc, exp) => acc + exp.amount,
-      0
-    );
-    const previousMonthTotal = previousMonthExpenses.reduce(
-      (acc, exp) => acc + exp.amount,
-      0
-    );
+    const currentMonthTotal = calculateTotal(currentMonthExpenses);
+    const previousMonthTotal = calculateTotal(previousMonthExpenses);
 
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const currentDay = new Date().getDate();
     const remainingDays = daysInMonth - currentDay;
-
     const dailyAverage = currentMonthTotal / currentDay;
     const projectedTotal = currentMonthTotal + dailyAverage * remainingDays;
 
-    const trend =
-      projectedTotal > previousMonthTotal
-        ? "up"
-        : projectedTotal < previousMonthTotal
-        ? "down"
-        : "stable";
+    const trend = determineTrend(projectedTotal, previousMonthTotal);
+
+    const recommendation =
+      trend === "up" && previousMonthTotal > 0
+        ? `Gastos aumentando ${(
+            ((projectedTotal - previousMonthTotal) / previousMonthTotal) *
+            100
+          ).toFixed(0)}%`
+        : "Proyección dentro del rango normal";
 
     return {
       type: "monthly",
       title: "Fin de Mes",
       description: `Total proyectado: ${formatCurrency(projectedTotal)}`,
       predictedAmount: projectedTotal,
-      confidence: currentDay > 15 ? "high" : currentDay > 7 ? "medium" : "low",
+      confidence: getConfidenceLevelByDay(currentDay),
       icon: "calendar",
       trend,
-      recommendation:
-        trend === "up"
-          ? `Gastos aumentando ${(
-              ((projectedTotal - previousMonthTotal) / previousMonthTotal) *
-              100
-            ).toFixed(0)}%`
-          : "Proyección dentro del rango normal",
+      recommendation,
     };
   };
 
   const calculateCategoryPrediction = (
-    expenses: any[]
+    expenses: Expense[]
   ): SpendingPrediction | null => {
-    const categoryTotals = expenses.reduce((acc, expense) => {
-      acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
-      return acc;
-    }, {});
+    const categoryTotals = expenses.reduce<Record<string, number>>(
+      (acc, expense) => {
+        acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
+        return acc;
+      },
+      {}
+    );
 
-    const sortedCategories = Object.entries(categoryTotals)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 3);
+    const sortedCategories = Object.entries(categoryTotals).sort(
+      ([, a], [, b]) => b - a
+    );
 
     if (sortedCategories.length === 0) return null;
 
     const [topCategory, topAmount] = sortedCategories[0];
-    const totalExpenses = Object.values(categoryTotals).reduce(
-      (acc, amount) => acc + amount,
-      0
-    );
-    const percentage = ((topAmount as number) / totalExpenses) * 100;
+    const totalExpenses = calculateTotal(expenses);
+    const percentage = (topAmount / totalExpenses) * 100;
+
+    const recommendation =
+      percentage > PREDICTION_THRESHOLDS.CATEGORY.HIGH_CONCENTRATION
+        ? "Considera diversificar tus gastos"
+        : "Distribución equilibrada de categorías";
 
     return {
       type: "category",
-      title: `Categoría Principal`,
+      title: "Categoría Principal",
       description: `${topCategory}: ${percentage.toFixed(0)}% del gasto`,
-      predictedAmount: topAmount as number,
+      predictedAmount: topAmount,
       confidence: "high",
       icon: "pie-chart-outline",
       trend: "stable",
-      recommendation:
-        percentage > 40
-          ? "Considera diversificar tus gastos"
-          : "Distribución equilibrada de categorías",
+      recommendation,
     };
   };
 
   const calculateEndOfMonthPrediction = (
     budgetStatus: BudgetStatus,
-    expenses: any[]
+    _expenses: Expense[]
   ): SpendingPrediction | null => {
-    const projectedTotal = budgetStatus.projectedTotal;
-    const budgetAmount = budgetStatus.budget.amount;
-    const exceedsPercentage =
-      ((projectedTotal - budgetAmount) / budgetAmount) * 100;
+    const { projectedTotal, budget, daysRemaining, recommendedDailyLimit } =
+      budgetStatus;
+    const budgetAmount = budget.amount;
 
-    if (projectedTotal <= budgetAmount * 1.05) return null; // Solo mostrar si excede por más del 5%
+    // Solo mostrar si excede por más del 5%
+    if (projectedTotal <= budgetAmount * PREDICTION_THRESHOLDS.BUDGET.ALERT_THRESHOLD) {
+      return null;
+    }
+
+    const exceedAmount = projectedTotal - budgetAmount;
 
     return {
       type: "monthly",
       title: "Alerta de Presupuesto",
-      description: `Riesgo de exceder por ${formatCurrency(
-        projectedTotal - budgetAmount
-      )}`,
+      description: `Riesgo de exceder por ${formatCurrency(exceedAmount)}`,
       predictedAmount: projectedTotal,
-      confidence: budgetStatus.daysRemaining > 10 ? "medium" : "high",
+      confidence: daysRemaining > 10 ? "medium" : "high",
       icon: "warning-outline",
       trend: "up",
       recommendation: `Reduce gastos diarios a ${formatCurrency(
-        budgetStatus.recommendedDailyLimit
+        recommendedDailyLimit
       )}`,
     };
   };
 
   const calculateHighSpendingDaysPrediction = (
-    expenses: any[]
+    expenses: Expense[]
   ): SpendingPrediction | null => {
-    const dayOfWeekTotals = expenses.reduce((acc, expense) => {
-      const dayOfWeek = new Date(expense.date).getDay();
-      acc[dayOfWeek] = (acc[dayOfWeek] || 0) + expense.amount;
-      return acc;
-    }, {});
+    const dayOfWeekTotals = expenses.reduce<Record<number, number>>(
+      (acc, expense) => {
+        const dayOfWeek = new Date(expense.date).getDay();
+        acc[dayOfWeek] = (acc[dayOfWeek] || 0) + expense.amount;
+        return acc;
+      },
+      {}
+    );
 
-    const dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
     const sortedDays = Object.entries(dayOfWeekTotals).sort(
       ([, a], [, b]) => b - a
     );
@@ -316,15 +392,13 @@ const BudgetPredictionsCard: React.FC<BudgetPredictionsCardProps> = ({
     if (sortedDays.length === 0) return null;
 
     const [highestDay, highestAmount] = sortedDays[0];
-    const dayName = dayNames[parseInt(highestDay)];
+    const dayName = DAY_NAMES[parseInt(highestDay)];
 
     return {
       type: "weekly",
       title: "Día de Mayor Gasto",
-      description: `Los ${dayName} gastas más: ${formatCurrency(
-        highestAmount as number
-      )}`,
-      predictedAmount: highestAmount as number,
+      description: `Los ${dayName} gastas más: ${formatCurrency(highestAmount)}`,
+      predictedAmount: highestAmount,
       confidence: "medium",
       icon: "trending-up-outline",
       trend: "stable",
@@ -332,38 +406,26 @@ const BudgetPredictionsCard: React.FC<BudgetPredictionsCardProps> = ({
     };
   };
 
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat("es-CO", {
-      style: "currency",
-      currency: "COP",
-      maximumFractionDigits: 0,
-    }).format(amount);
+  const getConfidenceColor = (confidence: Confidence) => {
+    const colorMap: Record<Confidence, string> = {
+      high: colors.success,
+      medium: colors.warning,
+      low: colors.error,
+    };
+    return colorMap[confidence];
   };
 
-  const getConfidenceColor = (confidence: string) => {
-    switch (confidence) {
-      case "high":
-        return colors.success;
-      case "medium":
-        return colors.warning;
-      case "low":
-        return colors.error;
-      default:
-        return colors.textSecondary;
-    }
+  const getTrendColor = (trend: Trend) => {
+    const colorMap: Record<Trend, string> = {
+      up: colors.error,
+      down: colors.success,
+      stable: colors.textSecondary,
+    };
+    return colorMap[trend];
   };
 
-  const getTrendColor = (trend: string) => {
-    switch (trend) {
-      case "up":
-        return colors.error;
-      case "down":
-        return colors.success;
-      case "stable":
-        return colors.textSecondary;
-      default:
-        return colors.textSecondary;
-    }
+  const getConfidenceLabel = (confidence: Confidence): string => {
+    return CONFIDENCE_LABELS[confidence];
   };
 
   if (loading) {
@@ -452,11 +514,7 @@ const BudgetPredictionsCard: React.FC<BudgetPredictionsCardProps> = ({
                 <Text
                   style={[styles.confidenceText, { color: colors.background }]}
                 >
-                  {prediction.confidence === "high"
-                    ? "Alta"
-                    : prediction.confidence === "medium"
-                    ? "Media"
-                    : "Baja"}
+                  {getConfidenceLabel(prediction.confidence)}
                 </Text>
               </View>
             </View>
