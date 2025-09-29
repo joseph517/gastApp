@@ -173,9 +173,9 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
         </Suspense>
 
         {/* Phase 2: Gastos Vencidos */}
-        <Suspense fallback={<LoadingCard height={200} />}>
+        {/* <Suspense fallback={<LoadingCard height={200} />}>
           <OverdueExpensesCard />
-        </Suspense>
+        </Suspense> */}
 
         {/* Predicción mensual */}
         {loadingStates.prediction ? (
@@ -214,7 +214,7 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
         )}
 
         {/* Gráfico de categorías */}
-        {loadingStates.categories ? (
+        {/* {loadingStates.categories ? (
           <LoadingCard height={350} />
         ) : (
           <Suspense fallback={<LoadingCard height={350} />}>
@@ -224,7 +224,7 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
               showPercentages={true}
             />
           </Suspense>
-        )}
+        )} */}
 
         {/* Análisis de frecuencia */}
         <Suspense fallback={<LoadingCard height={400} />}>
