@@ -44,9 +44,6 @@ const CalendarHeatMap = React.lazy(
 const WeeklySpendingChart = React.lazy(
   () => import("../components/analytics/WeeklySpendingChart")
 );
-const OverdueExpensesCard = React.lazy(
-  () => import("../components/analytics/OverdueExpensesCard")
-);
 
 interface AnalyticsScreenProps {
   navigation: any;
@@ -172,11 +169,6 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
           <InsightsSection insights={getBasicInsights()} />
         </Suspense>
 
-        {/* Phase 2: Gastos Vencidos */}
-        {/* <Suspense fallback={<LoadingCard height={200} />}>
-          <OverdueExpensesCard />
-        </Suspense> */}
-
         {/* Predicción mensual */}
         {loadingStates.prediction ? (
           <LoadingCard height={300} />
@@ -212,19 +204,6 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
             />
           </Suspense>
         )}
-
-        {/* Gráfico de categorías */}
-        {/* {loadingStates.categories ? (
-          <LoadingCard height={350} />
-        ) : (
-          <Suspense fallback={<LoadingCard height={350} />}>
-            <CategoryChart
-              data={topCategories}
-              title="Top 5 Categorías del Mes"
-              showPercentages={true}
-            />
-          </Suspense>
-        )} */}
 
         {/* Análisis de frecuencia */}
         <Suspense fallback={<LoadingCard height={400} />}>
