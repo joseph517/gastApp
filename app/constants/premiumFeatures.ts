@@ -68,7 +68,7 @@ export const PREMIUM_FEATURES: PremiumFeature[] = [
 ];
 
 export const getFeatureConfig = (featureId: string): PremiumFeature | null => {
-  return PREMIUM_FEATURES.find(feature => feature.id === featureId) || null;
+  return PREMIUM_FEATURES.find((feature) => feature.id === featureId) || null;
 };
 
 export const getAllFeatures = (): PremiumFeature[] => {
@@ -76,9 +76,9 @@ export const getAllFeatures = (): PremiumFeature[] => {
 };
 
 export const getImplementedFeatures = (): PremiumFeature[] => {
-  return PREMIUM_FEATURES.filter(feature => feature.isImplemented);
+  return PREMIUM_FEATURES.filter((feature) => feature.isImplemented);
 };
 
 export const getPremiumFeatures = (): PremiumFeature[] => {
-  return PREMIUM_FEATURES.filter(feature => feature.isPremium);
+  return PREMIUM_FEATURES.filter((feature) => feature.isPremium);
 };
