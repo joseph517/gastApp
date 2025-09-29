@@ -13,26 +13,40 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpenseStore } from "../store/expenseStore";
-import { SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from "../constants/colors";
+import {
+  SPACING,
+  FONT_SIZES,
+  BORDER_RADIUS,
+  SHADOWS,
+} from "../constants/colors";
 import { RecurringExpense, PendingRecurringExpense } from "../types";
 import { databaseService } from "../database/database";
+import { recurringExpenseService } from "app/services/recurringExpenseService";
+import { useToast } from "app/contexts/ToastContext";
 
 interface RecurringExpensesScreenProps {
   navigation: any;
 }
 
-const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({ navigation }) => {
+const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({
+  navigation,
+}) => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { isPremium } = useExpenseStore();
 
-  const [activeTab, setActiveTab] = useState<'active' | 'pending' | 'stats'>('active');
-  const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
-  const [pendingExpenses, setPendingExpenses] = useState<PendingRecurringExpense[]>([]);
+  const [recurringExpenses, setRecurringExpenses] = useState<
+    RecurringExpense[]
+  >([]);
+  const [pendingExpenses, setPendingExpenses] = useState<
+    PendingRecurringExpense[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const styles = createStyles(colors, insets);
+
+  const { showToast } = useToast();
 
   // Verificar acceso premium
   useEffect(() => {
@@ -53,15 +67,14 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({ navig
       // Cargar datos de forma simple - como era originalmente
       const [recurring, pending] = await Promise.all([
         databaseService.getRecurringExpenses(),
-        databaseService.getPendingRecurringExpenses()
+        databaseService.getPendingRecurringExpenses(),
       ]);
 
       setRecurringExpenses(recurring);
       setPendingExpenses(pending);
-
     } catch (error) {
-      console.error('Error loading recurring expenses:', error);
-      Alert.alert('Error', 'No se pudieron cargar los gastos recurrentes');
+      console.error("Error loading recurring expenses:", error);
+      Alert.alert("Error", "No se pudieron cargar los gastos recurrentes");
     } finally {
       setLoading(false);
     }
@@ -85,12 +98,12 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({ navig
   const handleToggleActive = async (expense: RecurringExpense) => {
     try {
       await databaseService.updateRecurringExpense(expense.id!, {
-        isActive: !expense.isActive
+        isActive: !expense.isActive,
       });
       await loadData();
     } catch (error) {
-      console.error('Error toggling expense:', error);
-      Alert.alert('Error', 'No se pudo actualizar el gasto recurrente');
+      console.error("Error toggling expense:", error);
+      Alert.alert("Error", "No se pudo actualizar el gasto recurrente");
     }
   };
 
@@ -108,37 +121,41 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({ navig
               await databaseService.deleteRecurringExpense(expense.id!);
               await loadData();
             } catch (error) {
-              console.error('Error deleting expense:', error);
-              Alert.alert('Error', 'No se pudo eliminar el gasto recurrente');
+              console.error("Error deleting expense:", error);
+              Alert.alert("Error", "No se pudo eliminar el gasto recurrente");
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
 
   const handleConfirmPending = async (pending: PendingRecurringExpense) => {
     try {
-      const success = await recurringExpenseService.confirmPendingExpense(pending.id!);
+      const success = await recurringExpenseService.confirmPendingExpense(
+        pending.id!
+      );
       if (success) {
         await loadData();
-        Alert.alert('Éxito', 'Gasto confirmado y agregado correctamente');
+        showToast("Gasto confirmado", "success");
       }
     } catch (error) {
-      console.error('Error confirming pending:', error);
-      Alert.alert('Error', 'No se pudo confirmar el gasto');
+      console.error("Error confirming pending:", error);
+      Alert.alert("Error", "No se pudo confirmar el gasto");
     }
   };
 
   const handleSkipPending = async (pending: PendingRecurringExpense) => {
     try {
-      const success = await recurringExpenseService.skipPendingExpense(pending.id!);
+      const success = await recurringExpenseService.skipPendingExpense(
+        pending.id!
+      );
       if (success) {
         await loadData();
       }
     } catch (error) {
-      console.error('Error skipping pending:', error);
-      Alert.alert('Error', 'No se pudo omitir el gasto');
+      console.error("Error skipping pending:", error);
+      Alert.alert("Error", "No se pudo omitir el gasto");
     }
   };
 
@@ -158,41 +175,61 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({ navig
     });
   };
 
-  const getFrequencyLabel = (intervalDays: number, executionDates?: number[]) => {
+  const getFrequencyLabel = (
+    intervalDays: number,
+    executionDates?: number[]
+  ) => {
     if (executionDates && executionDates.length > 0) {
-      return `Días ${executionDates.join(', ')} del mes`;
+      return `Días ${executionDates.join(", ")} del mes`;
     }
 
     switch (intervalDays) {
-      case 7: return "Cada 7 días";
-      case 15: return "Cada 15 días";
-      case 30: return "Cada 30 días";
-      default: return `Cada ${intervalDays} días`;
+      case 7:
+        return "Cada 7 días";
+      case 15:
+        return "Cada 15 días";
+      case 30:
+        return "Cada 30 días";
+      default:
+        return `Cada ${intervalDays} días`;
     }
   };
 
   const renderRecurringExpenseCard = (expense: RecurringExpense) => (
-    <View key={expense.id} style={[styles.card, !expense.isActive && styles.pausedCard]}>
+    <View
+      key={expense.id}
+      style={[styles.card, !expense.isActive && styles.pausedCard]}
+    >
       <View style={styles.cardHeader}>
         <View style={styles.cardTitleContainer}>
           <View style={styles.titleWithStatus}>
             <Text style={styles.cardTitle}>{expense.description}</Text>
-            <View style={[styles.statusBadge, expense.isActive ? styles.activeBadge : styles.pausedBadge]}>
+            <View
+              style={[
+                styles.statusBadge,
+                expense.isActive ? styles.activeBadge : styles.pausedBadge,
+              ]}
+            >
               <Ionicons
                 name={expense.isActive ? "checkmark-circle" : "pause-circle"}
                 size={14}
                 color={colors.background}
               />
               <Text style={styles.statusText}>
-                {expense.isActive ? 'Activo' : 'Pausado'}
+                {expense.isActive ? "Activo" : "Pausado"}
               </Text>
             </View>
           </View>
-          <Text style={styles.cardAmount}>{formatCurrency(expense.amount)}</Text>
+          <Text style={styles.cardAmount}>
+            {formatCurrency(expense.amount)}
+          </Text>
         </View>
         <View style={styles.cardActions}>
           <TouchableOpacity
-            style={[styles.actionButton, expense.isActive ? styles.pauseButton : styles.resumeButton]}
+            style={[
+              styles.actionButton,
+              expense.isActive ? styles.pauseButton : styles.resumeButton,
+            ]}
             onPress={() => handleToggleActive(expense)}
           >
             <Ionicons
@@ -205,7 +242,11 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({ navig
             style={[styles.actionButton, styles.deleteButton]}
             onPress={() => handleDeleteRecurring(expense)}
           >
-            <Ionicons name="trash-outline" size={16} color={colors.background} />
+            <Ionicons
+              name="trash-outline"
+              size={16}
+              color={colors.background}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -228,11 +269,13 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({ navig
       <View style={styles.cardHeader}>
         <View style={styles.cardTitleContainer}>
           <Text style={styles.cardTitle}>{pending.description}</Text>
-          <Text style={styles.cardAmount}>{formatCurrency(pending.amount)}</Text>
+          <Text style={styles.cardAmount}>
+            {formatCurrency(pending.amount)}
+          </Text>
         </View>
         <View style={styles.pendingBadge}>
           <Text style={styles.pendingBadgeText}>
-            {pending.status === 'overdue' ? '⏰ Vencido' : '⏳ Pendiente'}
+            {pending.status === "overdue" ? "⏰ Vencido" : "⏳ Pendiente"}
           </Text>
         </View>
       </View>
@@ -261,61 +304,21 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({ navig
     </View>
   );
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'active':
-        return (
-          <View style={styles.tabContent}>
-            {recurringExpenses.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateTitle}>Sin gastos recurrentes</Text>
-                <Text style={styles.emptyStateText}>
-                  Crea tu primer gasto recurrente para automatizar tus finanzas
-                </Text>
-              </View>
-            ) : (
-              recurringExpenses.map(renderRecurringExpenseCard)
-            )}
+  const renderActiveContent = () => {
+    return (
+      <View style={styles.content}>
+        {recurringExpenses.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateTitle}>Sin gastos recurrentes</Text>
+            <Text style={styles.emptyStateText}>
+              Crea tu primer gasto recurrente para automatizar tus finanzas
+            </Text>
           </View>
-        );
-
-      case 'pending':
-        return (
-          <View style={styles.tabContent}>
-            {pendingExpenses.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateTitle}>Sin gastos pendientes</Text>
-                <Text style={styles.emptyStateText}>
-                  Los gastos programados aparecerán aquí para tu confirmación
-                </Text>
-              </View>
-            ) : (
-              pendingExpenses.map(renderPendingExpenseCard)
-            )}
-          </View>
-        );
-
-      case 'stats':
-        return (
-          <View style={styles.tabContent}>
-            <View style={styles.statsContainer}>
-              <Text style={styles.statsTitle}>📊 Estadísticas Recurrentes</Text>
-              <Text style={styles.statsText}>
-                Total activos: {recurringExpenses.filter(e => e.isActive).length}
-              </Text>
-              <Text style={styles.statsText}>
-                Pendientes: {pendingExpenses.length}
-              </Text>
-              <Text style={styles.statsText}>
-                Esta funcionalidad se expandirá próximamente
-              </Text>
-            </View>
-          </View>
-        );
-
-      default:
-        return null;
-    }
+        ) : (
+          recurringExpenses.map(renderRecurringExpenseCard)
+        )}
+      </View>
+    );
   };
 
   if (!isPremium) {
@@ -335,37 +338,9 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({ navig
         <Text style={styles.title}>Gastos Recurrentes</Text>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => navigation.navigate('AddRecurringExpense')}
+          onPress={() => navigation.navigate("AddRecurringExpense")}
         >
           <Ionicons name="add" size={24} color={colors.primary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'active' && styles.activeTab]}
-          onPress={() => setActiveTab('active')}
-        >
-          <Text style={[styles.tabText, activeTab === 'active' && styles.activeTabText]}>
-            Activos ({recurringExpenses.filter(e => e.isActive).length})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'pending' && styles.activeTab]}
-          onPress={() => setActiveTab('pending')}
-        >
-          <Text style={[styles.tabText, activeTab === 'pending' && styles.activeTabText]}>
-            Pendientes ({pendingExpenses.length})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'stats' && styles.activeTab]}
-          onPress={() => setActiveTab('stats')}
-        >
-          <Text style={[styles.tabText, activeTab === 'stats' && styles.activeTabText]}>
-            Estadísticas
-          </Text>
         </TouchableOpacity>
       </View>
 
@@ -377,7 +352,7 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({ navig
         }
         showsVerticalScrollIndicator={false}
       >
-        {renderTabContent()}
+        {renderActiveContent()}
         <View style={{ height: 100 }} />
       </ScrollView>
     </View>
@@ -411,33 +386,10 @@ const createStyles = (colors: any, insets: { top: number }) =>
     addButton: {
       padding: SPACING.xs,
     },
-    tabContainer: {
-      flexDirection: "row",
-      backgroundColor: colors.surface,
-      paddingHorizontal: SPACING.md,
-    },
-    tab: {
-      flex: 1,
-      paddingVertical: SPACING.md,
-      alignItems: "center",
-      borderBottomWidth: 2,
-      borderBottomColor: "transparent",
-    },
-    activeTab: {
-      borderBottomColor: colors.primary,
-    },
-    tabText: {
-      fontSize: FONT_SIZES.md,
-      fontWeight: "600",
-      color: colors.textSecondary,
-    },
-    activeTabText: {
-      color: colors.primary,
-    },
     scrollView: {
       flex: 1,
     },
-    tabContent: {
+    content: {
       padding: SPACING.md,
     },
     card: {
@@ -601,23 +553,6 @@ const createStyles = (colors: any, insets: { top: number }) =>
       fontSize: FONT_SIZES.md,
       color: colors.textSecondary,
       textAlign: "center",
-    },
-    statsContainer: {
-      backgroundColor: colors.cardBackground,
-      padding: SPACING.lg,
-      borderRadius: BORDER_RADIUS.lg,
-      ...SHADOWS.small,
-    },
-    statsTitle: {
-      fontSize: FONT_SIZES.lg,
-      fontWeight: "700",
-      color: colors.textPrimary,
-      marginBottom: SPACING.md,
-    },
-    statsText: {
-      fontSize: FONT_SIZES.md,
-      color: colors.textSecondary,
-      marginBottom: SPACING.xs,
     },
   });
 
