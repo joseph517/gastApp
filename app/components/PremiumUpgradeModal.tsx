@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme, ThemeColors } from "../contexts/ThemeContext";
@@ -17,6 +16,8 @@ import {
   BORDER_RADIUS,
   SHADOWS,
 } from "../constants/colors";
+import { useToast } from "app/contexts/ToastContext";
+import ToastContainer from "./shared/ToastContainer";
 
 interface PremiumUpgradeModalProps {
   visible: boolean;
@@ -40,38 +41,38 @@ const PremiumUpgradeModal: React.FC<PremiumUpgradeModalProps> = ({
     cvv: "",
   });
 
-  const handleUpgrade = () => {
-    if (
-      !formData.fullName ||
-      !formData.email ||
-      !formData.cardNumber ||
-      !formData.expiryDate ||
-      !formData.cvv
-    ) {
-      Alert.alert("Error", "Por favor completa todos los campos");
-      return;
-    }
+  const { showToast } = useToast();
 
-    Alert.alert(
-      "¡Upgrade Exitoso!",
-      "Tu cuenta ha sido actualizada a Premium. Ahora tienes acceso a todas las funciones.",
-      [
-        {
-          text: "Continuar",
-          onPress: () => {
-            setFormData({
-              fullName: "",
-              email: "",
-              cardNumber: "",
-              expiryDate: "",
-              cvv: "",
-            });
-            onUpgradeSuccess();
-            onClose();
-          },
-        },
-      ]
-    );
+  const handleUpgrade = () => {
+    // if (
+    //   !formData.fullName ||
+    //   !formData.email ||
+    //   !formData.cardNumber ||
+    //   !formData.expiryDate ||
+    //   !formData.cvv
+    // ) {
+    //   showToast("Por favor, completa todos los campos.", "error", {
+    //     duration: 3000,
+    //   });
+    //   return;
+    // }
+
+    // Limpiar formulario y activar premium
+    setFormData({
+      fullName: "",
+      email: "",
+      cardNumber: "",
+      expiryDate: "",
+      cvv: "",
+    });
+    onUpgradeSuccess();
+
+    // Mostrar toast de éxito y cerrar modal
+    showToast("¡Upgrade Exitoso!", "success", {
+      duration: 2000,
+    });
+
+    onClose();
   };
 
   const formatCardNumber = (text: string) => {
@@ -254,6 +255,8 @@ const PremiumUpgradeModal: React.FC<PremiumUpgradeModalProps> = ({
 
           <View style={{ height: 40 }} />
         </ScrollView>
+
+        <ToastContainer />
       </View>
     </Modal>
   );
