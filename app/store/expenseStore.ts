@@ -4,6 +4,7 @@ import { databaseService } from '../database/database';
 import { FREE_TIER_LIMITS } from '../constants/categories';
 import { getCategoryColor } from '../utils/categoryUtils';
 import { budgetNotificationService } from '../services/budgetNotificationService';
+import { recurringExpenseService } from '../services/recurringExpenseService';
 import { getWeekStart, getWeekEnd } from '../utils/dateUtils';
 
 interface ExpenseStore {
@@ -77,6 +78,14 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
       await get().loadCategories();
       await get().getExpenses();
       await get().loadBudgets();
+
+      // Procesar gastos recurrentes automáticamente
+      try {
+        await recurringExpenseService.processAllRecurringExpenses();
+      } catch (error) {
+        console.error('Error processing recurring expenses:', error);
+        // No bloquear la inicialización si falla el procesamiento
+      }
 
       set({ isPremium, loading: false });
     } catch (error) {
