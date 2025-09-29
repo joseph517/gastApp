@@ -12,7 +12,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpenseStore } from "../store/expenseStore";
-import { SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from "../constants/colors";
+import {
+  SPACING,
+  FONT_SIZES,
+  BORDER_RADIUS,
+  SHADOWS,
+} from "../constants/colors";
 import { BudgetStatus } from "../types";
 import BudgetCard from "../components/budget/BudgetCard";
 import BudgetForm from "../components/budget/BudgetForm";
@@ -33,12 +38,10 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
     activeBudget,
     budgets,
     isPremium,
-    loading,
     createBudget,
     updateBudget,
     deleteBudget,
     getBudgetStatus,
-    loadBudgets,
   } = useExpenseStore();
 
   const [budgetStatus, setBudgetStatus] = useState<BudgetStatus | null>(null);
@@ -64,7 +67,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
   const handleCreateBudget = async (budgetData: any) => {
     const success = await createBudget({
       amount: budgetData.amount,
-      period: 'monthly',
+      period: "monthly",
       startDate: budgetData.startDate,
       endDate: budgetData.endDate,
       isActive: true,
@@ -134,7 +137,8 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
           <Ionicons name="diamond" size={64} color={colors.accent} />
           <Text style={styles.premiumTitle}>Función Premium</Text>
           <Text style={styles.premiumSubtitle}>
-            El control de presupuesto está disponible solo para usuarios Premium.
+            El control de presupuesto está disponible solo para usuarios
+            Premium.
           </Text>
           <TouchableOpacity
             style={styles.upgradeButton}
@@ -208,11 +212,11 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
         )}
 
         {/* Previous Budgets */}
-        {budgets.filter(b => !b.isActive).length > 0 && (
+        {budgets.filter((b) => !b.isActive).length > 0 && (
           <View style={styles.historySection}>
             <Text style={styles.historyTitle}>Presupuestos Anteriores</Text>
             {budgets
-              .filter(b => !b.isActive)
+              .filter((b) => !b.isActive)
               .map((budget) => (
                 <BudgetCard
                   key={budget.id}

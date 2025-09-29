@@ -2,7 +2,12 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme, ThemeColors } from "../../contexts/ThemeContext";
-import { SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from "../../constants/colors";
+import {
+  SPACING,
+  FONT_SIZES,
+  BORDER_RADIUS,
+  SHADOWS,
+} from "../../constants/colors";
 import PremiumBadge from "../PremiumBadge";
 import { getAllFeatures } from "../../constants/premiumFeatures";
 import { useFeatureAccess } from "../../hooks/useFeatureAccess";
@@ -14,7 +19,7 @@ interface PremiumSectionProps {
 
 const PremiumSection: React.FC<PremiumSectionProps> = ({
   onUpgradePress,
-  navigation
+  navigation,
 }) => {
   const { colors } = useTheme();
   const { isPremium } = useFeatureAccess();
