@@ -23,6 +23,7 @@ import {
 } from "../constants/colors";
 import CategoryPicker from "../components/CategoryPicker";
 import { ExpenseFormData } from "../types";
+import { useToast } from "app/contexts/ToastContext";
 
 const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors } = useTheme();
@@ -84,17 +85,23 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const handleSubmit = async () => {
     // Validaciones
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      Alert.alert("Error", "Ingresa un monto válido");
+      showToast("Ingresa un monto válido", "error", {
+        duration: 2000,
+      });
       return;
     }
 
     if (!formData.description.trim()) {
-      Alert.alert("Error", "Ingresa una descripción");
+      showToast("Ingresa una descripción", "error", {
+        duration: 2000,
+      });
       return;
     }
 
     if (!formData.category) {
-      Alert.alert("Error", "Selecciona una categoría");
+      showToast("Selecciona una categoría", "error", {
+        duration: 2000,
+      });
       return;
     }
 
@@ -128,13 +135,18 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     const canAdd = await canAddExpense();
 
     if (!canAdd) {
-      Alert.alert(
-        "Límite alcanzado",
+      showToast(
         "Has alcanzado el límite diario de gastos. Upgrade a Premium para gastos ilimitados.",
-        [
-          { text: "Entendido", style: "default" },
-          { text: "Ver Premium", style: "default" },
-        ]
+        "warning",
+        {
+          duration: 3000,
+          action: {
+            text: "Ver Premium",
+            onPress: () => {
+              // TODO: Navegar a la pantalla de Premium
+            },
+          },
+        }
       );
       return;
     }
@@ -150,30 +162,27 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       const success = await addExpense(expense);
 
       if (success) {
-        Alert.alert(
-          "¡Gasto agregado!",
-          "El gasto se ha registrado correctamente.",
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                // Resetear formulario
-                setFormData({
-                  amount: "",
-                  description: "",
-                  category: categories[0]?.name || "",
-                  date: new Date(),
-                });
-                // Volver al dashboard
-                navigation.navigate("DashboardTab");
-              },
+        showToast("¡Gasto agregado!", "success", {
+          duration: 3000,
+          action: {
+            text: "OK",
+            onPress: () => {
+              // Resetear formulario
+              setFormData({
+                amount: "",
+                description: "",
+                category: categories[0]?.name || "",
+                date: new Date(),
+              });
+              // Volver al dashboard
+              navigation.navigate("DashboardTab");
             },
-          ]
-        );
+          },
+        });
       }
     } catch (error) {
       console.error("Error adding expense:", error);
-      Alert.alert("Error", "No se pudo agregar el gasto. Inténtalo de nuevo.");
+      showToast("Error al agregar el gasto", "error");
     }
   };
 
@@ -205,6 +214,8 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   };
 
   const styles = createStyles(colors, insets);
+
+  const { showToast } = useToast();
 
   return (
     <View style={styles.container}>
