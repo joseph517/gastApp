@@ -1,10 +1,7 @@
 import { useCallback } from "react";
 import { useExpenseStore } from "../store/expenseStore";
-import {
-  getFeatureConfig,
-  FeatureConfig,
-  FeatureAccessResult,
-} from "../constants/featureConfig";
+import { getFeatureConfig, getAllFeatures } from "../constants/premiumFeatures";
+import { PremiumFeature, FeatureAccessResult } from "../types/statistics";
 
 export const useFeatureAccess = () => {
   const { isPremium } = useExpenseStore();
