@@ -6,7 +6,8 @@ import {
   getMondayBasedDayOfWeek,
   getWeekRange,
   DAY_NAMES_SHORT,
-  DAY_NAMES_FULL
+  DAY_NAMES_FULL,
+  parseLocalDate
 } from "../utils/dateUtils";
 import { InsightData } from "../components/analytics/InsightCard";
 import { CategoryChange } from "../components/analytics/CategoryChanges";
@@ -260,7 +261,7 @@ export const useAnalytics = () => {
     const dayTotals = new Map<number, number>();
 
     recentExpenses.forEach(expense => {
-      const day = getMondayBasedDayOfWeek(new Date(expense.date));
+      const day = getMondayBasedDayOfWeek(parseLocalDate(expense.date));
       const current = dayTotals.get(day) || 0;
       dayTotals.set(day, current + expense.amount);
     });
@@ -561,7 +562,7 @@ export const useAnalytics = () => {
         intensity = 2; // Valor medio si todos los días tienen el mismo gasto
       }
 
-      const dayOfMonth = new Date(date).getDate();
+      const dayOfMonth = parseLocalDate(date).getDate();
 
       // Ordenar gastos por monto (mayor a menor)
       const sortedExpenses = dayData.expenses.sort((a, b) => b.amount - a.amount);
@@ -618,7 +619,7 @@ export const useAnalytics = () => {
 
     dailyTotals.forEach((dayData, date) => {
       const intensity = Math.min(Math.floor((dayData.amount / maxAmount) * 4) + 1, 4);
-      const dayOfMonth = new Date(date).getDate();
+      const dayOfMonth = parseLocalDate(date).getDate();
 
       heatMapData.push({
         date,
@@ -649,7 +650,7 @@ export const useAnalytics = () => {
 
     // Agrupar gastos por día de la semana
     expenses.forEach(expense => {
-      const dayOfWeek = getMondayBasedDayOfWeek(new Date(expense.date));
+      const dayOfWeek = getMondayBasedDayOfWeek(parseLocalDate(expense.date));
       weeklyData[dayOfWeek].totalAmount += expense.amount;
       weeklyData[dayOfWeek].totalTransactions += 1;
     });
@@ -719,7 +720,7 @@ export const useAnalytics = () => {
 
     // Agrupar gastos por día de la semana
     weekExpenses.forEach(expense => {
-      const dayOfWeek = getMondayBasedDayOfWeek(new Date(expense.date));
+      const dayOfWeek = getMondayBasedDayOfWeek(parseLocalDate(expense.date));
       weeklyData[dayOfWeek].totalAmount += expense.amount;
       weeklyData[dayOfWeek].totalTransactions += 1;
     });
