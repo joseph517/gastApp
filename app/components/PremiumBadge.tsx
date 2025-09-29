@@ -3,27 +3,78 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
 import { SPACING, BORDER_RADIUS, FONT_SIZES } from "../constants/colors";
+import { useFeatureAccess } from "../hooks/useFeatureAccess";
 
 interface PremiumBadgeProps {
+  featureId: string;
   title: string;
   description: string;
   onPress?: () => void;
-  disabled?: boolean;
+  navigation?: any;
+  onUpgradePress?: () => void;
 }
 
 const PremiumBadge: React.FC<PremiumBadgeProps> = ({
+  featureId,
   title,
   description,
   onPress,
-  disabled = true,
+  navigation,
+  onUpgradePress,
 }) => {
   const { colors } = useTheme();
+  const {
+    checkFeatureAccess,
+    getFeatureAction,
+    shouldShowLock,
+    shouldShowComingSoon,
+    getFeatureMessage,
+  } = useFeatureAccess();
+
+  const accessResult = checkFeatureAccess(featureId);
+  const isDisabled = !accessResult.isAccessible;
+  const showLock = shouldShowLock(featureId);
+  const showComingSoon = shouldShowComingSoon(featureId);
+  const message = getFeatureMessage(featureId);
+
+  const handlePress = onPress || getFeatureAction(featureId, navigation, onUpgradePress);
+
   const styles = createStyles(colors);
+
+  // Determinar icono del estado
+  const getStatusIcon = () => {
+    if (showLock) {
+      return (
+        <Ionicons
+          name="lock-closed"
+          size={20}
+          color={colors.accent}
+        />
+      );
+    } else if (showComingSoon) {
+      return (
+        <Ionicons
+          name="time-outline"
+          size={20}
+          color={colors.gray400}
+        />
+      );
+    } else {
+      return (
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={colors.accent}
+        />
+      );
+    }
+  };
+
   return (
     <TouchableOpacity
-      style={[styles.container, disabled && styles.disabled]}
-      onPress={disabled ? undefined : onPress}
-      disabled={disabled}
+      style={[styles.container, isDisabled && styles.disabled]}
+      onPress={isDisabled ? undefined : handlePress}
+      disabled={isDisabled}
     >
       <View style={styles.content}>
         <View style={styles.iconContainer}>
@@ -34,16 +85,20 @@ const PremiumBadge: React.FC<PremiumBadgeProps> = ({
           <Text style={styles.description}>{description}</Text>
         </View>
         <View style={styles.lockContainer}>
-          <Ionicons
-            name="lock-closed"
-            size={20}
-            color={disabled ? colors.gray400 : colors.accent}
-          />
+          {getStatusIcon()}
         </View>
       </View>
-      {disabled && (
-        <View style={styles.comingSoonBadge}>
-          <Text style={styles.comingSoonText}>Próximamente</Text>
+      {(showComingSoon || showLock) && message && (
+        <View style={[
+          styles.statusBadge,
+          showLock ? styles.upgradeBadge : styles.comingSoonBadge
+        ]}>
+          <Text style={[
+            styles.statusText,
+            showLock ? styles.upgradeText : styles.comingSoonText
+          ]}>
+            {showLock ? "Premium" : message}
+          </Text>
         </View>
       )}
     </TouchableOpacity>
@@ -99,19 +154,29 @@ const createStyles = (colors: any) =>
     lockContainer: {
       padding: SPACING.xs,
     },
-    comingSoonBadge: {
+    statusBadge: {
       position: "absolute",
       top: 8,
       right: 8,
-      backgroundColor: colors.accent,
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: BORDER_RADIUS.sm,
     },
-    comingSoonText: {
+    comingSoonBadge: {
+      backgroundColor: colors.gray400,
+    },
+    upgradeBadge: {
+      backgroundColor: colors.accent,
+    },
+    statusText: {
       fontSize: FONT_SIZES.xs,
-      color: colors.background,
       fontWeight: "600",
+    },
+    comingSoonText: {
+      color: colors.background,
+    },
+    upgradeText: {
+      color: colors.background,
     },
   });
 
