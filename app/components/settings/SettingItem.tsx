@@ -1,19 +1,9 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Switch,
-  Alert,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Switch } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../contexts/ThemeContext";
-import {
-  SPACING,
-  FONT_SIZES,
-  BORDER_RADIUS,
-} from "../../constants/colors";
+import { useFeatureAccess } from "../../hooks/useFeatureAccess";
+import { SPACING, FONT_SIZES, BORDER_RADIUS } from "../../constants/colors";
 
 export interface SettingItemData {
   id: string;
@@ -24,6 +14,8 @@ export interface SettingItemData {
   value?: any;
   options?: { label: string; value: any }[];
   isPremium?: boolean;
+  isImplemented?: boolean;
+  featureId?: string;
   onPress?: () => void;
 }
 
@@ -31,26 +23,43 @@ interface SettingItemProps {
   item: SettingItemData;
   isPremiumUser: boolean;
   onToggle?: (id: string, value: any) => void;
+  onUpgradePress?: () => void;
 }
 
 export const SettingItem: React.FC<SettingItemProps> = ({
   item,
   isPremiumUser,
   onToggle,
+  onUpgradePress,
 }) => {
   const { colors } = useTheme();
-  const isDisabled = item.isPremium && !isPremiumUser;
+  const { checkFeatureAccess, shouldShowLock, shouldShowComingSoon } =
+    useFeatureAccess();
+
+  // Si el item tiene featureId, usar el sistema de control de acceso
+  const accessResult = item.featureId
+    ? checkFeatureAccess(item.featureId)
+    : null;
+
+  // Determinar si el item está deshabilitado
+  const isDisabled = item.featureId
+    ? !accessResult?.isAccessible
+    : item.isPremium && !isPremiumUser;
+
+  const showLock = item.featureId
+    ? shouldShowLock(item.featureId)
+    : item.isPremium && !isPremiumUser;
+  const showComingSoon = item.featureId
+    ? shouldShowComingSoon(item.featureId)
+    : item.isImplemented === false;
 
   const handlePress = () => {
     if (isDisabled) {
-      Alert.alert(
-        "Función Premium",
-        `${item.title} está disponible solo en la versión Premium.`,
-        [
-          { text: "Cancelar", style: "cancel" },
-          { text: "Ver Premium", style: "default" },
-        ]
-      );
+      // Si es premium y no tiene acceso, mostrar modal de upgrade
+      if (showLock && onUpgradePress) {
+        onUpgradePress();
+      }
+      // Si es "próximamente", no hacer nada
       return;
     }
 
@@ -77,64 +86,95 @@ export const SettingItem: React.FC<SettingItemProps> = ({
 
   const styles = createStyles(colors);
 
+  const getStatusIcon = () => {
+    if (showLock) {
+      return <Ionicons name="lock-closed" size={16} color={colors.accent} />;
+    } else if (showComingSoon) {
+      return <Ionicons name="time-outline" size={16} color={colors.gray400} />;
+    }
+    return null;
+  };
+
   return (
-    <TouchableOpacity
-      style={[styles.container, isDisabled && styles.disabled]}
-      onPress={handlePress}
-      disabled={item.type === "toggle" && isDisabled}
-    >
-      <View style={styles.left}>
-        <View style={[styles.iconContainer, isDisabled && styles.disabledIcon]}>
-          <Ionicons
-            name={item.icon}
-            size={20}
-            color={isDisabled ? colors.gray400 : colors.primary}
-          />
+    <View style={styles.wrapper}>
+      <TouchableOpacity
+        style={[styles.container, isDisabled && styles.disabled]}
+        onPress={handlePress}
+        disabled={item.type === "toggle" && isDisabled}
+      >
+        <View style={styles.left}>
+          <View
+            style={[styles.iconContainer, isDisabled && styles.disabledIcon]}
+          >
+            <Ionicons
+              name={item.icon}
+              size={20}
+              color={isDisabled ? colors.gray400 : colors.primary}
+            />
+          </View>
+          <View style={styles.textContainer}>
+            <View style={styles.titleRow}>
+              <Text style={[styles.title, isDisabled && styles.disabledText]}>
+                {item.title}
+              </Text>
+              {getStatusIcon()}
+            </View>
+            {item.subtitle && (
+              <Text
+                style={[styles.subtitle, isDisabled && styles.disabledSubtitle]}
+              >
+                {item.subtitle}
+              </Text>
+            )}
+          </View>
         </View>
-        <View style={styles.textContainer}>
-          <Text style={[styles.title, isDisabled && styles.disabledText]}>
-            {item.title}
-            {item.isPremium && " 💎"}
-          </Text>
-          {item.subtitle && (
-            <Text
-              style={[styles.subtitle, isDisabled && styles.disabledSubtitle]}
-            >
-              {item.subtitle}
-            </Text>
+
+        <View style={styles.right}>
+          {item.type === "toggle" && (
+            <Switch
+              value={item.value}
+              onValueChange={handleToggleChange}
+              trackColor={{
+                false: colors.gray200,
+                true: colors.primary + "40",
+              }}
+              thumbColor={item.value ? colors.primary : colors.gray400}
+              disabled={isDisabled}
+            />
+          )}
+          {(item.type === "navigation" ||
+            item.type === "action" ||
+            item.type === "select") && (
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={isDisabled ? colors.gray300 : colors.gray400}
+            />
           )}
         </View>
-      </View>
+      </TouchableOpacity>
 
-      <View style={styles.right}>
-        {item.type === "toggle" && (
-          <Switch
-            value={item.value}
-            onValueChange={handleToggleChange}
-            trackColor={{
-              false: colors.gray200,
-              true: colors.primary + "40",
-            }}
-            thumbColor={item.value ? colors.primary : colors.gray400}
-            disabled={isDisabled}
-          />
-        )}
-        {(item.type === "navigation" ||
-          item.type === "action" ||
-          item.type === "select") && (
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color={isDisabled ? colors.gray300 : colors.gray400}
-          />
-        )}
-      </View>
-    </TouchableOpacity>
+      {(showComingSoon || showLock) && (
+        <View
+          style={[
+            styles.statusBadge,
+            showLock ? styles.premiumBadge : styles.comingSoonBadge,
+          ]}
+        >
+          <Text style={styles.badgeText}>
+            {showLock ? "Premium" : "Próximamente"}
+          </Text>
+        </View>
+      )}
+    </View>
   );
 };
 
 const createStyles = (colors: any) =>
   StyleSheet.create({
+    wrapper: {
+      position: "relative",
+    },
     container: {
       flexDirection: "row",
       alignItems: "center",
@@ -166,11 +206,15 @@ const createStyles = (colors: any) =>
     textContainer: {
       flex: 1,
     },
+    titleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.xs,
+    },
     title: {
       fontSize: FONT_SIZES.md,
       fontWeight: "600",
       color: colors.textPrimary,
-      marginBottom: 2,
     },
     disabledText: {
       color: colors.gray400,
@@ -178,6 +222,7 @@ const createStyles = (colors: any) =>
     subtitle: {
       fontSize: FONT_SIZES.sm,
       color: colors.textSecondary,
+      marginTop: 2,
     },
     disabledSubtitle: {
       color: colors.gray300,
@@ -185,5 +230,24 @@ const createStyles = (colors: any) =>
     right: {
       alignItems: "center",
       justifyContent: "center",
+    },
+    statusBadge: {
+      position: "absolute",
+      top: SPACING.xs,
+      right: SPACING.xs,
+      paddingHorizontal: SPACING.xs,
+      paddingVertical: 2,
+      borderRadius: BORDER_RADIUS.sm,
+    },
+    comingSoonBadge: {
+      backgroundColor: colors.gray400,
+    },
+    premiumBadge: {
+      backgroundColor: colors.accent,
+    },
+    badgeText: {
+      fontSize: FONT_SIZES.xs,
+      fontWeight: "600",
+      color: colors.background,
     },
   });
