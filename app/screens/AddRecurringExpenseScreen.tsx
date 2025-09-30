@@ -25,8 +25,18 @@ import CategoryPicker from "../components/CategoryPicker";
 import { RecurringExpenseFormData } from "../types";
 import { databaseService } from "../database/database";
 import { recurringExpenseService } from "../services/recurringExpenseService";
+import {
+  INTERVAL_OPTIONS,
+  NOTIFICATION_OPTIONS,
+  formatCurrency as formatCurrencyUtil,
+  formatDateLong,
+  isValidDay,
+} from "../utils/recurringExpensesUtils";
+import { useToast } from "../contexts/ToastContext";
 
-const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({
+  navigation,
+}) => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { categories, loadCategories } = useExpenseStore();
@@ -47,6 +57,8 @@ const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }
   const [useMultipleDates, setUseMultipleDates] = useState(false);
   const [newExecutionDay, setNewExecutionDay] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const { showToast } = useToast();
 
   const styles = createStyles(colors, insets);
 
@@ -70,10 +82,10 @@ const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }
 
   const handleAddExecutionDate = () => {
     const day = parseInt(newExecutionDay);
-    if (day >= 1 && day <= 31 && !formData.executionDates.includes(day)) {
+    if (isValidDay(day) && !formData.executionDates.includes(day)) {
       setFormData((prev) => ({
         ...prev,
-        executionDates: [...prev.executionDates, day].sort((a, b) => a - b)
+        executionDates: [...prev.executionDates, day].sort((a, b) => a - b),
       }));
       setNewExecutionDay("");
     }
@@ -82,13 +94,13 @@ const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }
   const handleRemoveExecutionDate = (day: number) => {
     setFormData((prev) => ({
       ...prev,
-      executionDates: prev.executionDates.filter(d => d !== day)
+      executionDates: prev.executionDates.filter((d) => d !== day),
     }));
   };
 
   const calculateNextDueDate = () => {
-    return recurringExpenseService.calculateNextDueDate(
-      formData.startDate.toISOString().split('T')[0],
+    return recurringExpenseService.calculateAdvancedNextDueDate(
+      formData.startDate.toISOString().split("T")[0],
       formData.intervalDays,
       useMultipleDates ? formData.executionDates : undefined
     );
@@ -97,22 +109,30 @@ const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }
   const handleSubmit = async () => {
     // Validaciones
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      Alert.alert("Error", "Ingresa un monto válido");
+      showToast("Ingresa un monto válido", "error", {
+        duration: 2000,
+      });
       return;
     }
 
     if (!formData.description.trim()) {
-      Alert.alert("Error", "Ingresa una descripción");
+      showToast("Ingresa una descripción", "error", {
+        duration: 2000,
+      });
       return;
     }
 
     if (!formData.category) {
-      Alert.alert("Error", "Selecciona una categoría");
+      showToast("Selecciona una categoría", "error", {
+        duration: 2000,
+      });
       return;
     }
 
     if (useMultipleDates && formData.executionDates.length === 0) {
-      Alert.alert("Error", "Agrega al menos una fecha de ejecución");
+      showToast("Selecciona al menos un dia de ejecución", "error", {
+        duration: 2000,
+      });
       return;
     }
 
@@ -123,10 +143,10 @@ const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }
         amount: parseFloat(formData.amount),
         description: formData.description.trim(),
         category: formData.category,
-        frequency: 'custom' as const,
+        frequency: "custom" as const,
         intervalDays: formData.intervalDays,
-        startDate: formData.startDate.toISOString().split('T')[0],
-        endDate: formData.endDate?.toISOString().split('T')[0],
+        startDate: formData.startDate.toISOString().split("T")[0],
+        endDate: formData.endDate?.toISOString().split("T")[0],
         nextDueDate: calculateNextDueDate(),
         isActive: true,
         requiresConfirmation: true,
@@ -135,31 +155,27 @@ const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }
       };
 
       // Validar con el servicio
-      const validation = recurringExpenseService.validateRecurringExpense(recurringExpense);
+      const validation =
+        recurringExpenseService.validateRecurringExpense(recurringExpense);
       if (!validation.isValid) {
         Alert.alert("Error de validación", validation.errors.join("\n"));
         return;
       }
 
       await databaseService.createRecurringExpense(recurringExpense);
-      console.log('Recurring expense created successfully, navigating back...');
+      console.log("Recurring expense created successfully, navigating back...");
 
-      Alert.alert(
-        "¡Gasto recurrente creado!",
-        "El gasto recurrente se ha configurado correctamente.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              console.log('Navigating back to RecurringExpensesScreen...');
-              navigation.goBack();
-            },
-          },
-        ]
-      );
+      showToast("¡Gasto recurrente creado!", "success", {
+        duration: 2000,
+      });
+
+      if (navigation.canGoBack()) navigation.goBack();
     } catch (error) {
       console.error("Error creating recurring expense:", error);
-      Alert.alert("Error", "No se pudo crear el gasto recurrente. Inténtalo de nuevo.");
+      Alert.alert(
+        "Error",
+        "No se pudo crear el gasto recurrente. Inténtalo de nuevo."
+      );
     } finally {
       setLoading(false);
     }
@@ -183,20 +199,7 @@ const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }
     if (!amount) return "";
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount)) return amount;
-
-    return new Intl.NumberFormat("es-CO", {
-      style: "currency",
-      currency: "COP",
-    }).format(numAmount);
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("es-CO", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    return formatCurrencyUtil(numAmount);
   };
 
   return (
@@ -275,7 +278,7 @@ const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }
               onPress={() => {
                 setUseMultipleDates(!useMultipleDates);
                 if (!useMultipleDates) {
-                  setFormData(prev => ({ ...prev, executionDates: [] }));
+                  setFormData((prev) => ({ ...prev, executionDates: [] }));
                 }
               }}
             >
@@ -284,7 +287,9 @@ const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }
                 size={20}
                 color={colors.primary}
               />
-              <Text style={styles.toggleText}>Usar fechas específicas del mes</Text>
+              <Text style={styles.toggleText}>
+                Usar fechas específicas del mes
+              </Text>
             </TouchableOpacity>
 
             {!useMultipleDates ? (
@@ -292,19 +297,25 @@ const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }
               <View style={styles.intervalContainer}>
                 <Text style={styles.label}>Repetir cada:</Text>
                 <View style={styles.intervalOptions}>
-                  {[7, 15, 30].map((days) => (
+                  {INTERVAL_OPTIONS.map((days) => (
                     <TouchableOpacity
                       key={days}
                       style={[
                         styles.intervalOption,
-                        formData.intervalDays === days && styles.selectedInterval
+                        formData.intervalDays === days &&
+                          styles.selectedInterval,
                       ]}
-                      onPress={() => setFormData(prev => ({ ...prev, intervalDays: days }))}
+                      onPress={() =>
+                        setFormData((prev) => ({ ...prev, intervalDays: days }))
+                      }
                     >
-                      <Text style={[
-                        styles.intervalText,
-                        formData.intervalDays === days && styles.selectedIntervalText
-                      ]}>
+                      <Text
+                        style={[
+                          styles.intervalText,
+                          formData.intervalDays === days &&
+                            styles.selectedIntervalText,
+                        ]}
+                      >
                         {days} días
                       </Text>
                     </TouchableOpacity>
@@ -342,7 +353,11 @@ const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }
                         onPress={() => handleRemoveExecutionDate(day)}
                       >
                         <Text style={styles.selectedDateText}>{day}</Text>
-                        <Ionicons name="close" size={14} color={colors.background} />
+                        <Ionicons
+                          name="close"
+                          size={14}
+                          color={colors.background}
+                        />
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -358,9 +373,19 @@ const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }
               style={styles.dateButton}
               onPress={() => setShowStartDatePicker(true)}
             >
-              <Ionicons name="calendar-outline" size={20} color={colors.primary} />
-              <Text style={styles.dateText}>{formatDate(formData.startDate)}</Text>
-              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+              <Ionicons
+                name="calendar-outline"
+                size={20}
+                color={colors.primary}
+              />
+              <Text style={styles.dateText}>
+                {formatDateLong(formData.startDate)}
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.textSecondary}
+              />
             </TouchableOpacity>
           </View>
 
@@ -373,14 +398,22 @@ const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }
             >
               <Ionicons name="calendar" size={20} color={colors.primary} />
               <Text style={styles.dateText}>
-                {formData.endDate ? formatDate(formData.endDate) : "Sin límite"}
+                {formData.endDate
+                  ? formatDateLong(formData.endDate)
+                  : "Sin límite"}
               </Text>
-              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.textSecondary}
+              />
             </TouchableOpacity>
             {formData.endDate && (
               <TouchableOpacity
                 style={styles.clearDateButton}
-                onPress={() => setFormData(prev => ({ ...prev, endDate: undefined }))}
+                onPress={() =>
+                  setFormData((prev) => ({ ...prev, endDate: undefined }))
+                }
               >
                 <Text style={styles.clearDateText}>Quitar fecha límite</Text>
               </TouchableOpacity>
@@ -392,20 +425,26 @@ const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }
             <Text style={styles.sectionTitle}>Notificaciones</Text>
             <Text style={styles.label}>Notificar días antes:</Text>
             <View style={styles.notificationOptions}>
-              {[1, 3, 7].map((days) => (
+              {NOTIFICATION_OPTIONS.map((days) => (
                 <TouchableOpacity
                   key={days}
                   style={[
                     styles.notificationOption,
-                    formData.notifyDaysBefore === days && styles.selectedNotification
+                    formData.notifyDaysBefore === days &&
+                      styles.selectedNotification,
                   ]}
-                  onPress={() => setFormData(prev => ({ ...prev, notifyDaysBefore: days }))}
+                  onPress={() =>
+                    setFormData((prev) => ({ ...prev, notifyDaysBefore: days }))
+                  }
                 >
-                  <Text style={[
-                    styles.notificationText,
-                    formData.notifyDaysBefore === days && styles.selectedNotificationText
-                  ]}>
-                    {days} {days === 1 ? 'día' : 'días'}
+                  <Text
+                    style={[
+                      styles.notificationText,
+                      formData.notifyDaysBefore === days &&
+                        styles.selectedNotificationText,
+                    ]}
+                  >
+                    {days} {days === 1 ? "día" : "días"}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -416,13 +455,14 @@ const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }
           <View style={styles.previewSection}>
             <Text style={styles.previewTitle}>Vista Previa</Text>
             <Text style={styles.previewText}>
-              📅 Próxima ejecución: {formData.startDate ? calculateNextDueDate() : 'N/A'}
+              📅 Próxima ejecución:{" "}
+              {formData.startDate ? calculateNextDueDate() : "N/A"}
             </Text>
             <Text style={styles.previewText}>
-              🔄 {useMultipleDates
-                ? `Días ${formData.executionDates.join(', ')} del mes`
-                : `Cada ${formData.intervalDays} días`
-              }
+              🔄{" "}
+              {useMultipleDates
+                ? `Días ${formData.executionDates.join(", ")} del mes`
+                : `Cada ${formData.intervalDays} días`}
             </Text>
           </View>
 
@@ -450,7 +490,10 @@ const AddRecurringExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }
         {/* Submit Button */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+            style={[
+              styles.submitButton,
+              loading && styles.submitButtonDisabled,
+            ]}
             onPress={handleSubmit}
             disabled={loading}
           >
