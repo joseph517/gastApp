@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../contexts/ThemeContext";
@@ -15,6 +15,7 @@ import {
   createDataSettings,
   createAboutSettings,
 } from "../config/settingsConfig";
+import PremiumUpgradeModal from "../components/PremiumUpgradeModal";
 
 interface SettingsScreenProps {
   navigation: any;
@@ -24,8 +25,14 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { colors, isDark, toggleTheme } = useTheme();
   const insets = useSafeAreaInsets();
   const { preferences, updateSetting } = useSettings(isDark);
-  const { isPremium } = useExpenseStore();
-  const actions = useSettingsActions(isPremium);
+  const { isPremium, upgradeToPremium } = useExpenseStore();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  const handleUpgradePress = () => {
+    setShowUpgradeModal(true);
+  };
+
+  const actions = useSettingsActions(isPremium, handleUpgradePress);
 
   const personalizationSettings = createPersonalizationSettings(
     preferences,
@@ -33,7 +40,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     toggleTheme
   );
   const dataSettings = createDataSettings(actions);
-  const aboutSettings = createAboutSettings(actions);
+  const aboutSettings = createAboutSettings(actions, isPremium);
+
+  const handleUpgradeSuccess = async () => {
+    await upgradeToPremium();
+  };
 
   const styles = createStyles(colors, insets);
 
@@ -51,22 +62,31 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           items={personalizationSettings}
           isPremiumUser={isPremium}
           onToggle={updateSetting}
+          onUpgradePress={handleUpgradePress}
         />
         <SettingSection
           title="Datos"
           items={dataSettings}
           isPremiumUser={isPremium}
           onToggle={updateSetting}
+          onUpgradePress={handleUpgradePress}
         />
         <SettingSection
           title="Información"
           items={aboutSettings}
           isPremiumUser={isPremium}
           onToggle={updateSetting}
+          onUpgradePress={handleUpgradePress}
         />
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      <PremiumUpgradeModal
+        visible={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onUpgradeSuccess={handleUpgradeSuccess}
+      />
     </View>
   );
 };
