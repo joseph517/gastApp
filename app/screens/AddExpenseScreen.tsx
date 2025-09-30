@@ -162,23 +162,25 @@ const AddExpenseScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       const success = await addExpense(expense);
 
       if (success) {
-        showToast("¡Gasto agregado!", "success", {
-          duration: 3000,
-          action: {
-            text: "OK",
-            onPress: () => {
-              // Resetear formulario
-              setFormData({
-                amount: "",
-                description: "",
-                category: categories[0]?.name || "",
-                date: new Date(),
-              });
-              // Volver al dashboard
-              navigation.navigate("DashboardTab");
-            },
-          },
+        // Resetear formulario inmediatamente
+        setFormData({
+          amount: "",
+          description: "",
+          category: categories[0]?.name || "",
+          date: new Date(),
         });
+
+        // Actualizar contador de gastos
+        await checkTodayCount();
+
+        showToast("¡Gasto agregado!", "success", {
+          duration: 2000,
+        });
+
+        // Navegar al dashboard después de un breve delay
+        setTimeout(() => {
+          navigation.navigate("DashboardTab");
+        }, 500);
       }
     } catch (error) {
       console.error("Error adding expense:", error);
