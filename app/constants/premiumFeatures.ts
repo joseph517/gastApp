@@ -56,33 +56,6 @@ export const PREMIUM_FEATURES: PremiumFeature[] = [
     isPremium: true,
     screen: "RecurringExpenses",
   },
-  {
-    id: "currency-selector",
-    title: "Selector de Moneda",
-    description: "Cambia entre diferentes monedas para tus gastos",
-    icon: "💱",
-    isImplemented: false,
-    isPremium: true,
-    comingSoonMessage: "Selector de moneda - Próximamente",
-  },
-  {
-    id: "export-data-settings",
-    title: "Exportar Datos",
-    description: "Exporta tus gastos a Excel, PDF y otros formatos",
-    icon: "📤",
-    isImplemented: false,
-    isPremium: true,
-    comingSoonMessage: "Exportación de datos - Próximamente",
-  },
-  {
-    id: "cloud-backup",
-    title: "Respaldo en la Nube",
-    description: "Sincroniza y respalda tus datos en la nube",
-    icon: "☁️",
-    isImplemented: false,
-    isPremium: true,
-    comingSoonMessage: "Respaldo en la nube - Próximamente",
-  },
 ];
 
 export const getFeatureConfig = (featureId: string): PremiumFeature | null => {

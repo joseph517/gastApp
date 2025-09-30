@@ -37,35 +37,20 @@ const PremiumBadge: React.FC<PremiumBadgeProps> = ({
   const showComingSoon = shouldShowComingSoon(featureId);
   const message = getFeatureMessage(featureId);
 
-  const handlePress = onPress || getFeatureAction(featureId, navigation, onUpgradePress);
+  const handlePress =
+    onPress || getFeatureAction(featureId, navigation, onUpgradePress);
 
   const styles = createStyles(colors);
 
   // Determinar icono del estado
   const getStatusIcon = () => {
     if (showLock) {
-      return (
-        <Ionicons
-          name="lock-closed"
-          size={20}
-          color={colors.accent}
-        />
-      );
+      return <Ionicons name="lock-closed" size={20} color={colors.accent} />;
     } else if (showComingSoon) {
-      return (
-        <Ionicons
-          name="time-outline"
-          size={20}
-          color={colors.gray400}
-        />
-      );
+      return <Ionicons name="time-outline" size={20} color={colors.gray400} />;
     } else {
       return (
-        <Ionicons
-          name="chevron-forward"
-          size={20}
-          color={colors.accent}
-        />
+        <Ionicons name="chevron-forward" size={20} color={colors.accent} />
       );
     }
   };
@@ -84,19 +69,21 @@ const PremiumBadge: React.FC<PremiumBadgeProps> = ({
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.description}>{description}</Text>
         </View>
-        <View style={styles.lockContainer}>
-          {getStatusIcon()}
-        </View>
+        <View style={styles.lockContainer}>{getStatusIcon()}</View>
       </View>
       {(showComingSoon || showLock) && message && (
-        <View style={[
-          styles.statusBadge,
-          showLock ? styles.upgradeBadge : styles.comingSoonBadge
-        ]}>
-          <Text style={[
-            styles.statusText,
-            showLock ? styles.upgradeText : styles.comingSoonText
-          ]}>
+        <View
+          style={[
+            styles.statusBadge,
+            showLock ? styles.upgradeBadge : styles.comingSoonBadge,
+          ]}
+        >
+          <Text
+            style={[
+              styles.statusText,
+              showLock ? styles.upgradeText : styles.comingSoonText,
+            ]}
+          >
             {showLock ? "Premium" : message}
           </Text>
         </View>
