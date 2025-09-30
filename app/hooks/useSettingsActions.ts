@@ -1,7 +1,10 @@
 import { Alert } from "react-native";
 import { useExpenseStore } from "../store/expenseStore";
 
-export const useSettingsActions = (isPremium: boolean) => {
+export const useSettingsActions = (
+  isPremium: boolean,
+  onUpgradePress?: () => void
+) => {
   const { clearAllData } = useExpenseStore();
 
   const handleExportData = () => {
@@ -47,7 +50,9 @@ export const useSettingsActions = (isPremium: boolean) => {
   };
 
   const handleUpgradeToPremium = () => {
-    Alert.alert("Información", "Función próximamente disponible");
+    if (onUpgradePress) {
+      onUpgradePress();
+    }
   };
 
   const handleHelp = () => {
