@@ -14,6 +14,7 @@ interface SettingSectionProps {
   items: SettingItemData[];
   isPremiumUser: boolean;
   onToggle?: (id: string, value: any) => void;
+  onUpgradePress?: () => void;
 }
 
 export const SettingSection: React.FC<SettingSectionProps> = ({
@@ -21,6 +22,7 @@ export const SettingSection: React.FC<SettingSectionProps> = ({
   items,
   isPremiumUser,
   onToggle,
+  onUpgradePress,
 }) => {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -35,6 +37,7 @@ export const SettingSection: React.FC<SettingSectionProps> = ({
             item={item}
             isPremiumUser={isPremiumUser}
             onToggle={onToggle}
+            onUpgradePress={onUpgradePress}
           />
         ))}
       </View>
