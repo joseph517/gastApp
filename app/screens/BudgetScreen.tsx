@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -26,6 +26,9 @@ import BudgetAlertsCard from "../components/budget/BudgetAlertsCard";
 import BudgetPerformanceCard from "../components/budget/BudgetPerformanceCard";
 import BudgetPredictionsCard from "../components/budget/BudgetPredictionsCard";
 import BudgetSettingsCard from "../components/budget/BudgetSettingsCard";
+import CategoryLimitsInsightsCard, {
+  CategoryLimitsInsightsCardRef,
+} from "../components/budget/CategoryLimitsInsightsCard";
 
 interface BudgetScreenProps {
   navigation: any;
@@ -48,6 +51,8 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingBudget, setEditingBudget] = useState<any>(null);
+
+  const categoryLimitsRef = useRef<CategoryLimitsInsightsCardRef>(null);
 
   const styles = createStyles(colors, insets);
 
@@ -93,6 +98,11 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
       setEditingBudget(null);
       await loadBudgetStatus();
     }
+  };
+
+  const handleSettingsUpdated = () => {
+    // Refrescar gráfica de límites por categoría
+    categoryLimitsRef.current?.refresh();
   };
 
   const handleDeleteBudget = (budget: any) => {
@@ -178,6 +188,9 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
         {/* Budget Status */}
         {budgetStatus && <BudgetStatusCard budgetStatus={budgetStatus} />}
 
+        {/* Category Limits Insights */}
+        {isPremium && <CategoryLimitsInsightsCard ref={categoryLimitsRef} />}
+
         {/* Budget Alerts */}
         {activeBudget && <BudgetAlertsCard />}
 
@@ -188,7 +201,7 @@ const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
         <BudgetPredictionsCard budgetStatus={budgetStatus} />
 
         {/* Budget Settings */}
-        <BudgetSettingsCard />
+        <BudgetSettingsCard onSettingsUpdated={handleSettingsUpdated} />
 
         {/* Active Budget */}
         {activeBudget && (
