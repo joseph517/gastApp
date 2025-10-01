@@ -1,14 +1,16 @@
 import { BudgetStatus } from '../types';
+import { CategoryLimitStatus } from '../utils/budgetLimitsUtils';
 
 export interface BudgetAlert {
   id: string;
-  type: 'warning_75' | 'warning_90' | 'exceeded_100' | 'daily_limit' | 'monthly_prediction';
+  type: 'warning_75' | 'warning_90' | 'exceeded_100' | 'daily_limit' | 'monthly_prediction' | 'category_warning' | 'category_exceeded';
   title: string;
   message: string;
   priority: 'low' | 'normal' | 'high';
   budgetId: number;
   timestamp: Date;
   isRead: boolean;
+  category?: string; // Para alertas de categoría
 }
 
 class BudgetNotificationService {
@@ -139,6 +141,92 @@ class BudgetNotificationService {
         // Log alert instead of push notification
         console.log('Budget Alert:', alert.title, '-', alert.message);
         this.lastNotificationTimestamps.set(alertKey, now.getTime());
+      }
+    }
+
+    // Agregar nuevas alertas al array principal
+    this.alerts.unshift(...newAlerts);
+
+    // Limitar a las últimas 50 alertas
+    this.alerts = this.alerts.slice(0, 50);
+
+    // Notificar a los listeners
+    this.notifyListeners();
+
+    return newAlerts;
+  }
+
+  // Verificar y generar alertas para límites de categoría
+  async checkCategoryLimitAlerts(
+    categoryLimits: CategoryLimitStatus[],
+    budgetId: number
+  ): Promise<BudgetAlert[]> {
+    const newAlerts: BudgetAlert[] = [];
+    const now = new Date();
+
+    for (const limit of categoryLimits) {
+      // Alerta al 75% - Warning
+      if (limit.percentage >= 75 && limit.percentage < 90 && limit.status === 'warning') {
+        const alertKey = `category_warning_75_${budgetId}_${limit.category}`;
+        if (!this.wasRecentlyNotified(alertKey, 24 * 60 * 60 * 1000)) { // 24 horas
+          const alert = this.createAlert({
+            id: `${alertKey}_${now.getTime()}`,
+            type: 'category_warning',
+            title: `⚠️ Límite de ${limit.category}`,
+            message: `Has gastado ${limit.percentage.toFixed(0)}% del límite en ${limit.category}. Restante: ${this.formatCurrency(Math.max(0, limit.remaining))}.`,
+            priority: 'normal',
+            budgetId,
+            timestamp: now,
+            isRead: false,
+            category: limit.category,
+          });
+          newAlerts.push(alert);
+          console.log('Category Limit Alert:', alert.title, '-', alert.message);
+          this.lastNotificationTimestamps.set(alertKey, now.getTime());
+        }
+      }
+
+      // Alerta al 90% - Critical Warning
+      if (limit.percentage >= 90 && limit.percentage < 100 && limit.status === 'warning') {
+        const alertKey = `category_warning_90_${budgetId}_${limit.category}`;
+        if (!this.wasRecentlyNotified(alertKey, 12 * 60 * 60 * 1000)) { // 12 horas
+          const alert = this.createAlert({
+            id: `${alertKey}_${now.getTime()}`,
+            type: 'category_warning',
+            title: `🚨 ${limit.category} al 90%`,
+            message: `¡Cuidado! Solo te quedan ${this.formatCurrency(Math.max(0, limit.remaining))} en ${limit.category}.`,
+            priority: 'high',
+            budgetId,
+            timestamp: now,
+            isRead: false,
+            category: limit.category,
+          });
+          newAlerts.push(alert);
+          console.log('Category Limit Alert:', alert.title, '-', alert.message);
+          this.lastNotificationTimestamps.set(alertKey, now.getTime());
+        }
+      }
+
+      // Alerta al exceder el 100% - Exceeded
+      if (limit.status === 'exceeded') {
+        const alertKey = `category_exceeded_${budgetId}_${limit.category}`;
+        if (!this.wasRecentlyNotified(alertKey, 6 * 60 * 60 * 1000)) { // 6 horas
+          const excess = limit.spent - limit.limit;
+          const alert = this.createAlert({
+            id: `${alertKey}_${now.getTime()}`,
+            type: 'category_exceeded',
+            title: `🔴 ${limit.category} Excedido`,
+            message: `Has excedido el límite de ${limit.category} por ${this.formatCurrency(excess)}.`,
+            priority: 'high',
+            budgetId,
+            timestamp: now,
+            isRead: false,
+            category: limit.category,
+          });
+          newAlerts.push(alert);
+          console.log('Category Limit Alert:', alert.title, '-', alert.message);
+          this.lastNotificationTimestamps.set(alertKey, now.getTime());
+        }
       }
     }
 
