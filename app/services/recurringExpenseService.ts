@@ -32,6 +32,11 @@ class RecurringExpenseService {
       const today = new Date().toISOString().split('T')[0];
 
       for (const recurring of activeRecurringExpenses) {
+        // Solo crear pendientes si el gasto está activo
+        if (!recurring.isActive) {
+          continue;
+        }
+
         if (recurring.nextDueDate <= today) {
           // Phase 2: Soporte para múltiples fechas
           if (recurring.executionDates) {

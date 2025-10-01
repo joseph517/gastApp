@@ -19,13 +19,18 @@ import {
   BORDER_RADIUS,
   SHADOWS,
 } from "../constants/colors";
-import { RecurringExpense } from "../types";
+import { RecurringExpense, PendingRecurringExpense } from "../types";
 import { databaseService } from "../database/database";
 import RecurringExpenseCard from "../components/recurring/RecurringExpenseCard";
+import PendingExpenseCard from "../components/recurring/PendingExpenseCard";
+import { recurringExpenseService } from "../services/recurringExpenseService";
 
 interface RecurringExpensesScreenProps {
   navigation: any;
 }
+
+type TabType = "list" | "pending";
+type FilterMode = "all" | "active" | "paused";
 
 const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({
   navigation,
@@ -34,11 +39,12 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({
   const insets = useSafeAreaInsets();
   const { isPremium } = useExpenseStore();
 
-  const [recurringExpenses, setRecurringExpenses] = useState<
-    RecurringExpense[]
-  >([]);
+  const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
+  const [pendingExpenses, setPendingExpenses] = useState<PendingRecurringExpense[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>("list");
+  const [filterMode, setFilterMode] = useState<FilterMode>("all");
 
   const styles = createStyles(colors, insets);
 
@@ -58,8 +64,13 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({
     try {
       setLoading(true);
 
-      const recurring = await databaseService.getRecurringExpenses();
+      const [recurring, pending] = await Promise.all([
+        databaseService.getRecurringExpenses(),
+        databaseService.getPendingRecurringExpenses(),
+      ]);
+
       setRecurringExpenses(recurring);
+      setPendingExpenses(pending);
     } catch (error) {
       console.error("Error loading recurring expenses:", error);
       Alert.alert("Error", "No se pudieron cargar los gastos recurrentes");
@@ -85,13 +96,79 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({
 
   const handleToggleActive = async (expense: RecurringExpense) => {
     try {
-      await databaseService.updateRecurringExpense(expense.id!, {
-        isActive: !expense.isActive,
-      });
-      await loadData();
+      const newActiveState = !expense.isActive;
+
+      // Si se está reactivando un gasto pausado, verificar si la fecha está vencida
+      if (newActiveState && expense.nextDueDate < new Date().toISOString().split('T')[0]) {
+        Alert.alert(
+          "Gasto Vencido",
+          "Este gasto recurrente tiene una fecha de pago vencida. ¿Deseas actualizar la fecha de próximo pago a partir de hoy?",
+          [
+            {
+              text: "Mantener fecha",
+              style: "cancel",
+              onPress: async () => {
+                await databaseService.updateRecurringExpense(expense.id!, {
+                  isActive: newActiveState,
+                });
+                await loadData();
+              },
+            },
+            {
+              text: "Actualizar fecha",
+              onPress: async () => {
+                const nextDueDate = recurringExpenseService.calculateAdvancedNextDueDate(
+                  new Date().toISOString().split('T')[0],
+                  expense.intervalDays,
+                  expense.executionDates
+                );
+
+                await databaseService.updateRecurringExpense(expense.id!, {
+                  isActive: newActiveState,
+                  nextDueDate,
+                });
+                await loadData();
+              },
+            },
+          ]
+        );
+      } else {
+        await databaseService.updateRecurringExpense(expense.id!, {
+          isActive: newActiveState,
+        });
+        await loadData();
+      }
     } catch (error) {
       console.error("Error toggling expense:", error);
       Alert.alert("Error", "No se pudo actualizar el gasto recurrente");
+    }
+  };
+
+  const handleConfirmPending = async (id: number, amount: number) => {
+    try {
+      const success = await recurringExpenseService.confirmPendingExpense(id, { amount });
+      if (success) {
+        await loadData();
+      } else {
+        Alert.alert("Error", "No se pudo confirmar el gasto");
+      }
+    } catch (error) {
+      console.error("Error confirming pending expense:", error);
+      Alert.alert("Error", "No se pudo confirmar el gasto");
+    }
+  };
+
+  const handleSkipPending = async (id: number) => {
+    try {
+      const success = await recurringExpenseService.skipPendingExpense(id);
+      if (success) {
+        await loadData();
+      } else {
+        Alert.alert("Error", "No se pudo omitir el gasto");
+      }
+    } catch (error) {
+      console.error("Error skipping pending expense:", error);
+      Alert.alert("Error", "No se pudo omitir el gasto");
     }
   };
 
@@ -119,6 +196,23 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({
   };
 
 
+  const getFilteredRecurringExpenses = () => {
+    if (filterMode === "all") return recurringExpenses;
+    if (filterMode === "active") return recurringExpenses.filter(e => e.isActive);
+    if (filterMode === "paused") return recurringExpenses.filter(e => !e.isActive);
+    return recurringExpenses;
+  };
+
+  const getTodayPending = () => {
+    const today = new Date().toISOString().split('T')[0];
+    return pendingExpenses.filter(p => p.scheduledDate === today);
+  };
+
+  const getOverduePending = () => {
+    const today = new Date().toISOString().split('T')[0];
+    return pendingExpenses.filter(p => p.scheduledDate < today);
+  };
+
   const renderRecurringExpenseCard = (expense: RecurringExpense) => (
     <RecurringExpenseCard
       key={expense.id}
@@ -128,18 +222,102 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({
     />
   );
 
-  const renderActiveContent = () => {
+  const renderPendingExpenseCard = (pending: PendingRecurringExpense, isOverdue: boolean) => {
+    const today = new Date().toISOString().split('T')[0];
+    const dueDate = new Date(pending.scheduledDate);
+    const todayDate = new Date(today);
+    const daysOverdue = Math.floor((todayDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    return (
+      <PendingExpenseCard
+        key={pending.id}
+        expense={pending}
+        isOverdue={isOverdue}
+        daysOverdue={isOverdue ? daysOverdue : undefined}
+        onConfirm={handleConfirmPending}
+        onSkip={handleSkipPending}
+      />
+    );
+  };
+
+  const renderFilterButtons = () => (
+    <View style={styles.filterContainer}>
+      <TouchableOpacity
+        style={[styles.filterButton, filterMode === "all" && styles.filterButtonActive]}
+        onPress={() => setFilterMode("all")}
+      >
+        <Text style={[styles.filterButtonText, filterMode === "all" && styles.filterButtonTextActive]}>
+          Todas
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.filterButton, filterMode === "active" && styles.filterButtonActive]}
+        onPress={() => setFilterMode("active")}
+      >
+        <Text style={[styles.filterButtonText, filterMode === "active" && styles.filterButtonTextActive]}>
+          Activas
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.filterButton, filterMode === "paused" && styles.filterButtonActive]}
+        onPress={() => setFilterMode("paused")}
+      >
+        <Text style={[styles.filterButtonText, filterMode === "paused" && styles.filterButtonTextActive]}>
+          Pausadas
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderListTab = () => {
+    const filteredExpenses = getFilteredRecurringExpenses();
+
     return (
       <View style={styles.content}>
-        {recurringExpenses.length === 0 ? (
+        {renderFilterButtons()}
+        {filteredExpenses.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateTitle}>Sin gastos recurrentes</Text>
             <Text style={styles.emptyStateText}>
-              Crea tu primer gasto recurrente para automatizar tus finanzas
+              {filterMode === "all"
+                ? "Crea tu primer gasto recurrente para automatizar tus finanzas"
+                : `No hay gastos ${filterMode === "active" ? "activos" : "pausados"}`}
             </Text>
           </View>
         ) : (
-          recurringExpenses.map(renderRecurringExpenseCard)
+          filteredExpenses.map(renderRecurringExpenseCard)
+        )}
+      </View>
+    );
+  };
+
+  const renderPendingTab = () => {
+    const todayPending = getTodayPending();
+    const overduePending = getOverduePending();
+
+    return (
+      <View style={styles.content}>
+        {overduePending.length > 0 && (
+          <View style={styles.pendingSection}>
+            <Text style={styles.sectionTitle}>Vencidos ({overduePending.length})</Text>
+            {overduePending.map(p => renderPendingExpenseCard(p, true))}
+          </View>
+        )}
+
+        {todayPending.length > 0 && (
+          <View style={styles.pendingSection}>
+            <Text style={styles.sectionTitle}>Para hoy ({todayPending.length})</Text>
+            {todayPending.map(p => renderPendingExpenseCard(p, false))}
+          </View>
+        )}
+
+        {todayPending.length === 0 && overduePending.length === 0 && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateTitle}>Sin gastos pendientes</Text>
+            <Text style={styles.emptyStateText}>
+              Todos tus gastos recurrentes están al día
+            </Text>
+          </View>
         )}
       </View>
     );
@@ -148,6 +326,8 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({
   if (!isPremium) {
     return null;
   }
+
+  const pendingCount = pendingExpenses.length;
 
   return (
     <View style={styles.container}>
@@ -168,6 +348,33 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({
         </TouchableOpacity>
       </View>
 
+      {/* Tabs */}
+      <View style={styles.tabsContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "list" && styles.tabActive]}
+          onPress={() => setActiveTab("list")}
+        >
+          <Text style={[styles.tabText, activeTab === "list" && styles.tabTextActive]}>
+            Lista
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "pending" && styles.tabActive]}
+          onPress={() => setActiveTab("pending")}
+        >
+          <View style={styles.tabWithBadge}>
+            <Text style={[styles.tabText, activeTab === "pending" && styles.tabTextActive]}>
+              Pendientes
+            </Text>
+            {pendingCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{pendingCount}</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      </View>
+
       {/* Content */}
       <ScrollView
         style={styles.scrollView}
@@ -176,7 +383,7 @@ const RecurringExpensesScreen: React.FC<RecurringExpensesScreenProps> = ({
         }
         showsVerticalScrollIndicator={false}
       >
-        {renderActiveContent()}
+        {activeTab === "list" ? renderListTab() : renderPendingTab()}
         <View style={{ height: 100 }} />
       </ScrollView>
     </View>
@@ -210,11 +417,92 @@ const createStyles = (colors: any, insets: { top: number }) =>
     addButton: {
       padding: SPACING.xs,
     },
+    tabsContainer: {
+      flexDirection: "row",
+      backgroundColor: colors.surface,
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.xs,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: SPACING.sm,
+      alignItems: "center",
+      borderBottomWidth: 2,
+      borderBottomColor: "transparent",
+    },
+    tabActive: {
+      borderBottomColor: colors.primary,
+    },
+    tabText: {
+      fontSize: FONT_SIZES.md,
+      fontWeight: "600",
+      color: colors.textSecondary,
+    },
+    tabTextActive: {
+      color: colors.primary,
+    },
+    tabWithBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.xs,
+    },
+    badge: {
+      backgroundColor: colors.error,
+      borderRadius: BORDER_RADIUS.full,
+      minWidth: 20,
+      height: 20,
+      paddingHorizontal: 6,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    badgeText: {
+      fontSize: FONT_SIZES.xs,
+      fontWeight: "700",
+      color: colors.background,
+    },
+    filterContainer: {
+      flexDirection: "row",
+      marginBottom: SPACING.md,
+      gap: SPACING.xs,
+    },
+    filterButton: {
+      flex: 1,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.md,
+      borderRadius: BORDER_RADIUS.md,
+      backgroundColor: colors.surface,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    filterButtonActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    filterButtonText: {
+      fontSize: FONT_SIZES.sm,
+      fontWeight: "600",
+      color: colors.textSecondary,
+    },
+    filterButtonTextActive: {
+      color: colors.background,
+    },
     scrollView: {
       flex: 1,
     },
     content: {
       padding: SPACING.md,
+    },
+    pendingSection: {
+      marginBottom: SPACING.lg,
+    },
+    sectionTitle: {
+      fontSize: FONT_SIZES.lg,
+      fontWeight: "700",
+      color: colors.textPrimary,
+      marginBottom: SPACING.md,
     },
     emptyState: {
       alignItems: "center",
